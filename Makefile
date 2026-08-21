@@ -1,7 +1,6 @@
 
 .PHONY: make
 make:
-	@docker images | grep cqfd_kin_anakin4747_vimalaya -q || ./scripts/cqfd init
 	@./scripts/cqfd exec make test
 
 .PHONY: test
