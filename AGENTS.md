@@ -77,3 +77,15 @@ When to use this workflow:
 
 2. If the tests were not tracked with git ensure they are collected into the
    `feat:` commit.
+
+## Test Preservation
+
+- Never weaken, delete, skip, comment out, or replace an existing test assertion
+  to make an implementation pass.
+- Treat every existing test assertion as required behavior unless the user
+  explicitly requests its removal or behavioral change.
+- When adapting a test for a new requirement, preserve all prior assertions and
+  add assertions for the new behavior.
+- If a test conflicts with a requested change, stop and ask the user to confirm
+  the intended behavior before modifying the test.
+
