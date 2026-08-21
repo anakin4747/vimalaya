@@ -226,6 +226,51 @@ describe(":Mail", function()
         assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'forward'))
     end)
 
+    local function response_error(subcommand)
+        local message
+        vim.notify = function(notification)
+            message = notification
+        end
+        vim.cmd('Mail ' .. subcommand)
+        return message
+    end
+
+    it("rejects reply in mailbox buffers with a friendly error", function()
+        open_inbox_mailbox()
+
+        assert.equal(':Mail reply is only available in email buffers', response_error('reply'))
+    end)
+
+    it("rejects replyall in mailbox buffers with a friendly error", function()
+        open_inbox_mailbox()
+
+        assert.equal(':Mail replyall is only available in email buffers', response_error('replyall'))
+    end)
+
+    it("rejects forward in mailbox buffers with a friendly error", function()
+        open_inbox_mailbox()
+
+        assert.equal(':Mail forward is only available in email buffers', response_error('forward'))
+    end)
+
+    it("rejects reply in main menu buffers with a friendly error", function()
+        vim.cmd('Mail')
+
+        assert.equal(':Mail reply is only available in email buffers', response_error('reply'))
+    end)
+
+    it("rejects replyall in main menu buffers with a friendly error", function()
+        vim.cmd('Mail')
+
+        assert.equal(':Mail replyall is only available in email buffers', response_error('replyall'))
+    end)
+
+    it("rejects forward in main menu buffers with a friendly error", function()
+        vim.cmd('Mail')
+
+        assert.equal(':Mail forward is only available in email buffers', response_error('forward'))
+    end)
+
     it("opens a mailbox buffer", function()
         local main_menu = open_inbox_mailbox()
 

@@ -129,6 +129,7 @@ end
 
 function M.append_response(kind)
     if not pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_message_id") then
+        vim.notify(':Mail ' .. kind .. ' is only available in email buffers', vim.log.levels.ERROR)
         return
     end
 

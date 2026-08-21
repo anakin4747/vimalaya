@@ -28,15 +28,6 @@ CCs.
 
 ---
 
-:Mail reply is NOT a valid subcommand in mailbox buffers
-:Mail replyall is NOT a valid subcommand in mailbox buffers
-:Mail forward is NOT a valid subcommand in mailbox buffers
-:Mail reply is NOT a valid subcommand in main menu buffers
-:Mail replyall is NOT a valid subcommand in main menu buffers
-:Mail forward is NOT a valid subcommand in main menu buffers
-
----
-
 :Mail send is offered as a possible completion in email buffers with a reply section
 :Mail send is offered as a possible completion in email buffers with a replyall section
 :Mail send is offered as a possible completion in email buffers with a forward section
