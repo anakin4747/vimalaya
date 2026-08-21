@@ -4,6 +4,7 @@ local main_menu_name = "vimalaya main menu"
 
 function M.open_message(mailbox, id)
     local bufnr = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname())
     vim.api.nvim_set_current_buf(bufnr)
 
     vim.system({ 'himalaya', 'message', 'read', '--mailbox', mailbox, id }, {}, function(result)
