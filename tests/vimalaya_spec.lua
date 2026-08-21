@@ -635,4 +635,33 @@ describe(":Mail", function()
         end))
         assert.equal('Himalaya stdout\nHimalaya stderr\n', message)
     end)
+
+    local function assert_send_removes_response(kind)
+        open_first_message()
+        local original = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        vim.cmd('Mail ' .. kind)
+        vim.system = function(_, _, callback)
+            vim.schedule(function()
+                callback({ code = 0, stdout = 'Message successfully sent\n', stderr = '' })
+            end)
+        end
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.deep_equal(original, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+        end))
+    end
+
+    it("send removes reply sections after successful sends", function()
+        assert_send_removes_response('reply')
+    end)
+
+    it("send removes replyall sections after successful sends", function()
+        assert_send_removes_response('replyall')
+    end)
+
+    it("send removes forward sections after successful sends", function()
+        assert_send_removes_response('forward')
+    end)
 end)

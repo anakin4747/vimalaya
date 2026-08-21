@@ -173,6 +173,7 @@ function M.append_response(kind)
 end
 
 function M.send_response()
+    local bufnr = vim.api.nvim_get_current_buf()
     local is_message = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_message_id")
     local is_new_message = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_new_message")
     if not is_message and not is_new_message then
@@ -223,6 +224,9 @@ function M.send_response()
     vim.system(command, {}, function(result)
         vim.schedule(function()
             if result.code == 0 then
+                if vim.trim(result.stdout) == 'Message successfully sent' and vim.api.nvim_buf_is_valid(bufnr) then
+                    vim.api.nvim_buf_set_lines(bufnr, response_start - 3, -1, false, {})
+                end
                 vim.notify(vim.trim(result.stdout))
             else
                 vim.notify(result.stdout .. result.stderr, vim.log.levels.ERROR)

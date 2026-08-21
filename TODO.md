@@ -28,10 +28,6 @@ the cursor while pending
 
 ---
 
-:Mail send removes the reply, replyall, or forward section from the email buffer after successfully sending the email
-
----
-
 :Mail displays a clear error message if himalaya is not unlocked
 
 ---
