@@ -16,7 +16,7 @@ function M.open_mailbox(mailbox)
         local envelopes = vim.json.decode(result.stdout)
         local lines = {}
         for _, envelope in ipairs(envelopes.envelopes) do
-            table.insert(lines, envelope.subject)
+            table.insert(lines, envelope.date .. ' ' .. envelope.subject)
         end
 
         vim.schedule(function()

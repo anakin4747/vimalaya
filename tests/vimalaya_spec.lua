@@ -121,12 +121,12 @@ describe(":Mail", function()
         open_inbox_mailbox()
 
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
         end))
         assert.same({
-            'First example message',
-            'Second example message',
-            'Third example message',
+            '2026-01-01T00:00:00Z First example message',
+            '2026-01-02T00:00:00Z Second example message',
+            '2026-01-03T00:00:00Z Third example message',
         }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
     end)
 
