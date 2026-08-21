@@ -21,6 +21,8 @@ vim.api.nvim_create_user_command('Mail', function(options)
         vimalaya.open_new_message()
     elseif options.args == 'reply' or options.args == 'replyall' or options.args == 'forward' then
         vimalaya.append_response(options.args)
+    elseif options.args == 'send' then
+        vimalaya.send_response()
     else
         vimalaya.open_main_menu()
     end

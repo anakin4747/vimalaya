@@ -171,4 +171,54 @@ function M.append_response(kind)
     })
 end
 
+function M.send_response()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local response_start
+    local response_markers = {
+        ['--- Reply ---'] = true,
+        ['--- Reply All ---'] = true,
+        ['--- Forward ---'] = true,
+    }
+    for index, line in ipairs(lines) do
+        if response_markers[line] then
+            response_start = index
+        end
+    end
+    if not response_start then
+        return
+    end
+
+    local headers = {}
+    local body_start
+    for index = response_start + 1, #lines do
+        if lines[index] == '' then
+            body_start = index + 1
+            break
+        end
+
+        local name, value = lines[index]:match('^([^:]+):%s*(.*)$')
+        if name then
+            headers[name:lower()] = value
+        end
+    end
+
+    local command = { 'himalaya', 'message', 'compose', '--to', headers.to or '' }
+    for _, name in ipairs({ 'cc', 'bcc', 'subject' }) do
+        if headers[name] and headers[name] ~= '' then
+            vim.list_extend(command, { '--' .. name, headers[name] })
+        end
+    end
+    vim.list_extend(command, {
+        '--body', table.concat(vim.list_slice(lines, body_start or (#lines + 1)), '\n'), '--send',
+    })
+
+    vim.system(command, {}, function(result)
+        vim.schedule(function()
+            if result.code == 0 then
+                vim.notify(vim.trim(result.stdout))
+            end
+        end)
+    end)
+end
+
 return M

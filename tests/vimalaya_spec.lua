@@ -19,6 +19,7 @@ describe(":Mail", function()
                 ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
                 ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
                 ['himalaya message read --mailbox Inbox 1'] = 'tests/message.txt',
+                ['himalaya message compose --to Example Sender <sender@example.test> --cc Example Copy <copy@example.test> --bcc Example Blind Copy <blind-copy@example.test> --subject Re: First example message --body Thanks. --send'] = 'tests/send-suceeded.txt',
             }
             local fixture = fixtures[table.concat(command, ' ')]
             assert.is_not_nil(fixture, 'unexpected command: ' .. table.concat(command, ' '))
@@ -519,5 +520,30 @@ describe(":Mail", function()
             'subject: Fwd: First example message',
             '',
         }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
+    end)
+
+    it("send sends responses to their To, Cc, and Bcc recipients", function()
+        local message
+        open_first_message()
+        vim.cmd('Mail reply')
+        vim.api.nvim_buf_set_lines(0, -7, -1, false, {
+            '--- Reply ---',
+            'to: Example Sender <sender@example.test>',
+            'cc: Example Copy <copy@example.test>',
+            'bcc: Example Blind Copy <blind-copy@example.test>',
+            'subject: Re: First example message',
+            '',
+            'Thanks.',
+        })
+        vim.notify = function(notification)
+            message = notification
+        end
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return message ~= nil
+        end))
+        assert.equal('Message successfully sent', message)
     end)
 end)

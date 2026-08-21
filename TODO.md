@@ -23,11 +23,6 @@ the cursor while pending
 
 ---
 
-Then :Mail send will send the response email to the appropriate recipients and
-CCs.
-
----
-
 :Mail send is offered as a possible completion in email buffers with a reply section
 :Mail send is offered as a possible completion in email buffers with a replyall section
 :Mail send is offered as a possible completion in email buffers with a forward section
@@ -169,4 +164,3 @@ cc: <original cc>
 subject: Re: <original subject>
 attach: /bin/bash
 ```
-
