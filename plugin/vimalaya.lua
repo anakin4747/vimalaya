@@ -1,2 +1,1 @@
-
-vim.api.nvim_buf_create_user_command(0, 'Mail', function() _ = nil end, {})
+vim.api.nvim_create_user_command('Mail', require('vimalaya').open_main_menu, {})
