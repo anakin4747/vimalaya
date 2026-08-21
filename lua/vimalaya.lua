@@ -6,7 +6,7 @@ function M.open_new_message()
     local bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya new email')
     vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'To: ', 'Cc: ', 'Subject: ' })
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'To: ', 'Cc: ', 'Bcc: ', 'Subject: ' })
     vim.api.nvim_set_current_buf(bufnr)
 end
 
@@ -165,6 +165,7 @@ function M.append_response(kind)
         '--- ' .. action.title .. ' ---',
         'To: ' .. (headers.from or ''),
         'Cc: ' .. (headers.cc or ''),
+        'Bcc: ',
         'Subject: ' .. action.subject .. (headers.subject or ''),
         '',
     })
