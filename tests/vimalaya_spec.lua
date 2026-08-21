@@ -48,6 +48,12 @@ describe(":Mail", function()
         assert.equal(count + 1, #vim.api.nvim_list_bufs())
     end)
 
+    it("names the main menu buffer", function()
+        vim.cmd('Mail')
+
+        assert.equal(vim.fn.getcwd() .. '/vimalaya main menu', vim.api.nvim_buf_get_name(0))
+    end)
+
     it("lists mailboxes in the main menu", function()
         vim.cmd('Mail')
 
