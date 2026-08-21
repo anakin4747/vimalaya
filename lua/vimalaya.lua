@@ -4,6 +4,8 @@ local main_menu_name = "vimalaya main menu"
 
 function M.open_mailbox(mailbox)
     local bufnr = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_buf_set_name(bufnr, 'vimalaya ' .. mailbox .. ' mailbox')
+    vim.bo[bufnr].readonly = true
     vim.api.nvim_set_current_buf(bufnr)
 
     vim.system({ 'himalaya', 'envelope', 'list', '--mailbox', mailbox, '--json', '--page-size', '100' }, {}, function(result)
@@ -19,7 +21,9 @@ function M.open_mailbox(mailbox)
 
         vim.schedule(function()
             if vim.api.nvim_buf_is_valid(bufnr) then
+                vim.bo[bufnr].readonly = false
                 vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+                vim.bo[bufnr].readonly = true
             end
         end)
     end)

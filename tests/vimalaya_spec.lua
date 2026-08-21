@@ -91,6 +91,8 @@ describe(":Mail", function()
         assert.is_true(vim.wait(1000, function()
             return vim.api.nvim_get_current_buf() ~= main_menu
         end))
+        assert.equal(vim.fn.getcwd() .. '/vimalaya Inbox mailbox', vim.api.nvim_buf_get_name(0))
+        assert.is_true(vim.bo.readonly)
         assert.is_true(vim.wait(1000, function()
             return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'First example message'
         end))
