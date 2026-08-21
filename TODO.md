@@ -83,3 +83,17 @@ the email the user must:
 
 How will the user know that async waiting is happening? Rotate the colors of
 the cursor while pending
+
+---
+
+:Mail reply
+:Mail replyall
+:Mail forward
+
+---
+
+syntax highlighting
+
+---
+
+syntax error highlighting on suspiscous emails and email metadata
