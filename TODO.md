@@ -104,10 +104,6 @@ syntax error highlighting on suspiscous emails and email metadata
 
 ---
 
-:Mail close will close all vimalaya buffers
-
----
-
 :Mail shall reuse the same window if the vimalaya main menu buffer is already
 open
 
