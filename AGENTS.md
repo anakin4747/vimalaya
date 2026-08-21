@@ -15,7 +15,9 @@ When to use this workflow:
 - When I request only to add a test for a feature
 - If I explicitly start a prompt with TOW
 
-1. Add the requested tests to ./tests/vimalaya_spec.lua
+1. Add the requested tests to ./tests/vimalaya_spec.lua. Every test should be
+   atomic and as simple as possible. Every test should only test for one thing
+   at a time.
 
 2. Run `make` to assert that the added test fails. If the test already passes
    since the feature existed before the test then that is fine, continue to 3.
@@ -30,7 +32,7 @@ When to use this workflow:
 
 5. Then commit your change with a commit that uses a `tests:` prefix
 
-6. Run `git show` to ensure your commit is atommic and only making the minimal
+6. Run `git show` to ensure your commit is atomic and only making the minimal
    modifications necessary to achieve the requested test.
 
 7. Run `make` to lint check your commit message.
