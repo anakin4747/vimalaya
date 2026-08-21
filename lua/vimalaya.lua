@@ -197,6 +197,10 @@ function M.append_response(kind)
 end
 
 function M.attach_paths(paths, new_message)
+    paths = vim.tbl_map(function(path)
+        return vim.fn.fnamemodify(path, ':p')
+    end, paths)
+
     for _, path in ipairs(paths) do
         if vim.fn.filereadable(path) ~= 1 then
             vim.notify(':Mail cannot attach ' .. path .. ': not a file', vim.log.levels.ERROR)
