@@ -252,6 +252,12 @@ function M.attach_paths(paths, new_message)
             end, paths)
             vim.api.nvim_buf_set_lines(last_compose_bufnr, index - 1, index, false, attachments)
             return
+        elseif vim.startswith(lines[index], 'attach: ') then
+            local attachments = vim.tbl_map(function(path)
+                return 'attach: ' .. path
+            end, paths)
+            vim.api.nvim_buf_set_lines(last_compose_bufnr, index, index, false, attachments)
+            return
         end
     end
 end

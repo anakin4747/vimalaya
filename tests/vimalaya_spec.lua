@@ -890,6 +890,23 @@ describe(":Mail", function()
         assert.is_true(vim.tbl_contains(vim.api.nvim_buf_get_lines(email, 0, -1, false), 'attach: /bin/bash'))
     end)
 
+    it("keeps the attachment field for subsequent terminal selections", function()
+        vim.cmd('Mail new')
+        local email = vim.api.nvim_get_current_buf()
+        vim.cmd('split')
+        vim.cmd("terminal printf '/bin/bash\\n/bin/sh\\n'")
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 2, false)[2] == '/bin/sh'
+        end))
+
+        vim.cmd('1,1Mail')
+        vim.cmd('2,2Mail')
+
+        assert.same({ 'attach: /bin/bash', 'attach: /bin/sh' }, vim.tbl_filter(function(line)
+            return vim.startswith(line, 'attach:')
+        end, vim.api.nvim_buf_get_lines(email, 0, -1, false)))
+    end)
+
     it("opens a new email when attaching without a compose buffer", function()
         local source = vim.api.nvim_create_buf(true, false)
         vim.api.nvim_buf_set_lines(source, 0, -1, false, { '/bin/bash' })
