@@ -112,11 +112,6 @@ syntax error highlighting on suspiscous emails and email metadata
 
 ---
 
-:Mail <tab> will complete subcommands
-:Mail cl<tab> will complete to `:Mail close`
-
----
-
 :Mail shall reuse the same window if the vimalaya main menu buffer is already
 open
 

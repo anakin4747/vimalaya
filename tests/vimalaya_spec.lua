@@ -44,6 +44,14 @@ describe(":Mail", function()
         end)
     end)
 
+    it("completes subcommands", function()
+        assert.same({ 'close', 'forward', 'reply', 'replyall' }, vim.fn.getcompletion('Mail ', 'cmdline'))
+    end)
+
+    it("completes partial subcommands", function()
+        assert.same({ 'close' }, vim.fn.getcompletion('Mail cl', 'cmdline'))
+    end)
+
     it("does not call nvim_buf_is_valid in a fast event context", function()
         -- Prevent E5560: nvim_buf_is_valid must not be called in a fast event context.
         local schedule = vim.schedule

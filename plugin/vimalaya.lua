@@ -7,4 +7,11 @@ vim.api.nvim_create_user_command('Mail', function(options)
     else
         vimalaya.open_main_menu()
     end
-end, { nargs = '?' })
+end, {
+    nargs = '?',
+    complete = function(arg_lead)
+        return vim.tbl_filter(function(subcommand)
+            return vim.startswith(subcommand, arg_lead)
+        end, { 'close', 'forward', 'reply', 'replyall' })
+    end,
+})
