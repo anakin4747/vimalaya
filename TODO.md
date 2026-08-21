@@ -23,11 +23,6 @@ the cursor while pending
 
 ---
 
-
-:Mail send fails to send an email if the To: field is empty
-
----
-
 :Mail displays a clear error message if himalaya is not unlocked
 
 ---
