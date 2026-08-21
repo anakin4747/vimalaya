@@ -476,13 +476,15 @@ describe(":Mail", function()
         vim.cmd('Mail reply')
 
         assert.same({
+            '',
+            '',
             '--- Reply ---',
             'To: Example Sender <sender@example.test>',
             'Cc: Example Copy <copy@example.test>',
             'Subject: Re: First example message',
             '',
             '<Response>',
-        }, vim.api.nvim_buf_get_lines(0, -7, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
     end)
 
     it("replyall appends a Reply All header to email buffers", function()
@@ -491,13 +493,15 @@ describe(":Mail", function()
         vim.cmd('Mail replyall')
 
         assert.same({
+            '',
+            '',
             '--- Reply All ---',
             'To: Example Sender <sender@example.test>',
             'Cc: Example Copy <copy@example.test>',
             'Subject: Re: First example message',
             '',
             '<Response>',
-        }, vim.api.nvim_buf_get_lines(0, -7, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
     end)
 
     it("forward appends a Forward header to email buffers", function()
@@ -506,12 +510,14 @@ describe(":Mail", function()
         vim.cmd('Mail forward')
 
         assert.same({
+            '',
+            '',
             '--- Forward ---',
             'To: Example Sender <sender@example.test>',
             'Cc: Example Copy <copy@example.test>',
             'Subject: Fwd: First example message',
             '',
             '<Response>',
-        }, vim.api.nvim_buf_get_lines(0, -7, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
     end)
 end)

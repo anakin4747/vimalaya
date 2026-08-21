@@ -160,6 +160,8 @@ function M.append_response(kind)
     }
     local action = response[kind]
     vim.api.nvim_buf_set_lines(0, -1, -1, false, {
+        '',
+        '',
         '--- ' .. action.title .. ' ---',
         'To: ' .. (headers.from or ''),
         'Cc: ' .. (headers.cc or ''),
