@@ -4,7 +4,7 @@ local main_menu_name = "vimalaya main menu"
 
 function M.open_mailbox(mailbox)
     local bufnr = vim.api.nvim_create_buf(true, false)
-    vim.api.nvim_buf_set_name(bufnr, 'vimalaya ' .. mailbox .. ' mailbox')
+    vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya ' .. mailbox .. ' mailbox')
     vim.bo[bufnr].readonly = true
     vim.api.nvim_set_current_buf(bufnr)
 
@@ -44,7 +44,7 @@ function M.open_main_menu()
     end
 
     local bufnr = vim.api.nvim_create_buf(true, false)
-    vim.api.nvim_buf_set_name(bufnr, main_menu_name)
+    vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' ' .. main_menu_name)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_main_menu", true)
     vim.bo[bufnr].readonly = true
     vim.keymap.set('n', '<CR>', function()

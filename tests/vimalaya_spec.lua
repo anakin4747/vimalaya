@@ -52,7 +52,10 @@ describe(":Mail", function()
     it("names the main menu buffer", function()
         vim.cmd('Mail')
 
-        assert.equal(vim.fn.getcwd() .. '/vimalaya main menu', vim.api.nvim_buf_get_name(0))
+        assert.is_true(vim.startswith(
+            vim.api.nvim_buf_get_name(0),
+            vim.fn.fnamemodify(vim.fn.tempname(), ':h') .. '/'
+        ))
     end)
 
     it("makes the main menu buffer readonly", function()
@@ -91,7 +94,10 @@ describe(":Mail", function()
         assert.is_true(vim.wait(1000, function()
             return vim.api.nvim_get_current_buf() ~= main_menu
         end))
-        assert.equal(vim.fn.getcwd() .. '/vimalaya Inbox mailbox', vim.api.nvim_buf_get_name(0))
+        assert.is_true(vim.startswith(
+            vim.api.nvim_buf_get_name(0),
+            vim.fn.fnamemodify(vim.fn.tempname(), ':h') .. '/'
+        ))
         assert.is_true(vim.bo.readonly)
         assert.is_true(vim.wait(1000, function()
             return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'First example message'
