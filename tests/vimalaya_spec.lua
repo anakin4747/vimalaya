@@ -44,7 +44,7 @@ describe(":Mail", function()
         end)
     end)
 
-    it("schedules buffer access from system callbacks", function()
+    it("does not call nvim_buf_is_valid in a fast event context", function()
         -- Prevent E5560: nvim_buf_is_valid must not be called in a fast event context.
         local schedule = vim.schedule
         local is_valid = vim.api.nvim_buf_is_valid
