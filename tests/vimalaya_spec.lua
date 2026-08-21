@@ -13,6 +13,7 @@ describe(":Mail", function()
         vim.system = function(command, _, callback)
             local fixtures = {
                 ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
+                ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
             }
             local fixture = fixtures[table.concat(command, ' ')]
             assert.is_not_nil(fixture, 'unexpected command: ' .. table.concat(command, ' '))
@@ -75,6 +76,28 @@ describe(":Mail", function()
             '[Gmail]/Spam',
             '[Gmail]/Starred',
             '[Gmail]/Trash',
+        }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+    end)
+
+    it("opens a mailbox buffer with its envelopes", function()
+        vim.cmd('Mail')
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'Inbox'
+        end))
+        local main_menu = vim.api.nvim_get_current_buf()
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_get_current_buf() ~= main_menu
+        end))
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'First example message'
+        end))
+        assert.same({
+            'First example message',
+            'Second example message',
+            'Third example message',
         }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
     end)
 
