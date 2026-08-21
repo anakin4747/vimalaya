@@ -36,13 +36,14 @@ describe(":Mail", function()
         assert.equal(expected, actual)
     end)
 
-    -- it("reuses a currently hidden buffer", function()
-    --     vim.cmd('Mail')
-    --     local expected = vim.api.nvim_buf_get_name(0)
-    --
-    --     vim.cmd('Mail')
-    --     local actual = vim.api.nvim_buf_get_name(0)
-    --
-    --     assert.equal(expected, actual)
-    -- end)
+    it("reuses a currently hidden buffer", function()
+        vim.cmd('Mail')
+        local expected = vim.api.nvim_buf_get_name(0)
+
+        vim.cmd('enew')
+        vim.cmd('Mail')
+        local actual = vim.api.nvim_buf_get_name(0)
+
+        assert.equal(expected, actual)
+    end)
 end)
