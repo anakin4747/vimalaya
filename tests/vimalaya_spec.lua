@@ -196,6 +196,18 @@ describe(":Mail", function()
         assert.is_true(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'forward'))
     end)
 
+    it("reports ambiguous subcommand shorthands and their possible completions", function()
+        local message
+        open_first_message()
+        vim.notify = function(notification)
+            message = notification
+        end
+
+        vim.cmd('Mail r')
+
+        assert.equal(':Mail r is ambiguous; possible completions: reply, replyall', message)
+    end)
+
     it("does not offer reply completion in mailbox buffers", function()
         open_inbox_mailbox()
 
