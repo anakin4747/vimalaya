@@ -17,7 +17,15 @@ When to use this workflow:
 
 1. Add the requested tests to ./tests/vimalaya_spec.lua. Every test should be
    atomic and as simple as possible. Every test should only test for one thing
-   at a time.
+   at a time. If the test specification was given containing a line such as:
+   ```
+   :Mail foo bar
+   ```
+   The the test should be written so that the output of the test matches that
+   exactly:
+   ```
+   SUCCESS :Mail foo bar
+   ```
 
 2. Run `make` to assert that the added test fails. If the test already passes
    since the feature existed before the test then that is fine, continue to 3.
@@ -30,7 +38,17 @@ When to use this workflow:
 4. Run `git status --short` to ensure your commit is only going to include
    modifications to ./tests/vimalaya_spec.lua
 
-5. Then commit your change with a commit that uses a `tests:` prefix
+5. Then commit your change with a commit that uses a `tests:` prefix. If the
+   test specification was given containing a line such as:
+   ```
+   :Mail foo bar
+   ```
+   Then the commit message should be:
+   ```
+   tests: add failing test for :Mail foo bar
+   ```
+   If the commit introduces a group of :Mail tests then the commit message
+   should do its best to summarize the group of tests.
 
 6. Run `git show` to ensure your commit is atomic and only making the minimal
    modifications necessary to achieve the requested test.
@@ -60,7 +78,17 @@ When to use this workflow:
    modifications to ./tests/vimalaya_spec.lua, lua/vimalaya.lua, and
    plugin/vimalaya.lua
 
-6. Then commit your change with a commit that uses a `feat:` prefix
+6. Then commit your change with a commit that uses a `feat:` prefix. If the
+   test specification was given containing a line such as:
+   ```
+   :Mail foo bar
+   ```
+   Then the commit message should be:
+   ```
+   feat: add :Mail foo bar
+   ```
+   If the commit introduces a group of :Mail features then the commit message
+   should do its best to summarize the group features.
 
 7. Run `git show` to ensure your commit is atommic and only making the minimal
    modifications necessary to achieve the requested feature.
