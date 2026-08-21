@@ -660,6 +660,59 @@ describe(":Mail", function()
         assert.is_true(vim.tbl_contains(command, '/bin/bash'))
     end)
 
+    it("send supports repeated recipient and attachment fields", function()
+        local command
+        open_first_message()
+        vim.cmd('Mail reply')
+        local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        local response_start
+        for index, line in ipairs(lines) do
+            if line == '--- Reply ---' then
+                response_start = index
+            end
+        end
+        vim.api.nvim_buf_set_lines(0, response_start - 1, -1, false, {
+            '--- Reply ---',
+            'to: first-to@example.test',
+            'to: second-to@example.test',
+            'cc: first-cc@example.test',
+            'cc: second-cc@example.test',
+            'bcc: first-bcc@example.test',
+            'bcc: second-bcc@example.test',
+            'subject: Re: First example message',
+            'attach: /bin/bash',
+            'attach: /bin/sh',
+            '',
+            'Thanks.',
+        })
+        vim.system = function(args, _, callback)
+            command = args
+            vim.schedule(function()
+                callback({ code = 0, stdout = 'Message successfully sent\n', stderr = '' })
+            end)
+        end
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return command ~= nil
+        end))
+        assert.same({
+            'himalaya', 'message', 'compose',
+            '--to', 'first-to@example.test',
+            '--to', 'second-to@example.test',
+            '--cc', 'first-cc@example.test',
+            '--cc', 'second-cc@example.test',
+            '--bcc', 'first-bcc@example.test',
+            '--bcc', 'second-bcc@example.test',
+            '--subject', 'Re: First example message',
+            '--attach', '/bin/bash',
+            '--attach', '/bin/sh',
+            '--body', 'Thanks.',
+            '--send',
+        }, command)
+    end)
+
     local function assert_send_removes_response(kind)
         open_first_message()
         local original = vim.api.nvim_buf_get_lines(0, 0, -1, false)

@@ -122,7 +122,3 @@ not a valid file
 
 if several filepaths are highlighted and actually files they are all added with
 their own attach: field. One per attachement
-
----
-
-Support arbitrary number of to:s, cc:s, bcc:s, and attach:s in email buffers

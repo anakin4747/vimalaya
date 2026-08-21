@@ -198,7 +198,7 @@ function M.send_response()
         return
     end
 
-    local headers = {}
+    local headers = { to = {}, cc = {}, bcc = {}, attach = {} }
     local body_start
     for index = response_start + 1, #lines do
         if lines[index] == '' then
@@ -208,18 +208,28 @@ function M.send_response()
 
         local name, value = lines[index]:match('^([^:]+):%s*(.*)$')
         if name then
-            headers[name:lower()] = value
+            name = name:lower()
+            if headers[name] and type(headers[name]) == 'table' then
+                if value ~= '' then
+                    table.insert(headers[name], value)
+                end
+            else
+                headers[name] = value
+            end
         end
     end
 
-    local command = { 'himalaya', 'message', 'compose', '--to', headers.to or '' }
-    for _, name in ipairs({ 'cc', 'bcc', 'subject' }) do
-        if headers[name] and headers[name] ~= '' then
-            vim.list_extend(command, { '--' .. name, headers[name] })
+    local command = { 'himalaya', 'message', 'compose' }
+    for _, name in ipairs({ 'to', 'cc', 'bcc' }) do
+        for _, value in ipairs(headers[name]) do
+            vim.list_extend(command, { '--' .. name, value })
         end
     end
-    if headers.attach and headers.attach ~= '' then
-        vim.list_extend(command, { '--attach', headers.attach })
+    if headers.subject and headers.subject ~= '' then
+        vim.list_extend(command, { '--subject', headers.subject })
+    end
+    for _, value in ipairs(headers.attach) do
+        vim.list_extend(command, { '--attach', value })
     end
     vim.list_extend(command, {
         '--body', table.concat(vim.list_slice(lines, body_start or (#lines + 1)), '\n'), '--send',
