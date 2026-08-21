@@ -14,6 +14,7 @@ describe(":Mail", function()
             local fixtures = {
                 ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
                 ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
+                ['himalaya message read --mailbox Inbox 1'] = 'tests/message.txt',
             }
             local fixture = fixtures[table.concat(command, ' ')]
             assert.is_not_nil(fixture, 'unexpected command: ' .. table.concat(command, ' '))
@@ -128,6 +129,24 @@ describe(":Mail", function()
             '2026-01-02T00:00:00Z Second example message',
             '2026-01-03T00:00:00Z Third example message',
         }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+    end)
+
+    it("opens a message buffer from an envelope", function()
+        open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+        end))
+        local mailbox = vim.api.nvim_get_current_buf()
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_get_current_buf() ~= mailbox
+        end))
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'From: Example Sender <sender@example.test>'
+        end))
+        assert.same(vim.fn.readfile('tests/message.txt'), vim.api.nvim_buf_get_lines(0, 0, -1, false))
     end)
 
     it("reuses a currently active buffer", function()

@@ -2,6 +2,28 @@ local M = {}
 
 local main_menu_name = "vimalaya main menu"
 
+function M.open_message(mailbox, id)
+    local bufnr = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_set_current_buf(bufnr)
+
+    vim.system({ 'himalaya', 'message', 'read', '--mailbox', mailbox, id }, {}, function(result)
+        if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+            return
+        end
+
+        local lines = vim.split(result.stdout, '\n', { plain = true })
+        if lines[#lines] == '' then
+            table.remove(lines)
+        end
+
+        vim.schedule(function()
+            if vim.api.nvim_buf_is_valid(bufnr) then
+                vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+            end
+        end)
+    end)
+end
+
 function M.open_mailbox(mailbox)
     local bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya ' .. mailbox .. ' mailbox')
@@ -15,8 +37,10 @@ function M.open_mailbox(mailbox)
 
         local envelopes = vim.json.decode(result.stdout)
         local lines = {}
+        local envelope_ids = {}
         for _, envelope in ipairs(envelopes.envelopes) do
             table.insert(lines, envelope.date .. ' ' .. envelope.subject)
+            table.insert(envelope_ids, envelope.id)
         end
 
         vim.schedule(function()
@@ -24,6 +48,9 @@ function M.open_mailbox(mailbox)
                 vim.bo[bufnr].readonly = false
                 vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
                 vim.bo[bufnr].readonly = true
+                vim.keymap.set('n', '<CR>', function()
+                    M.open_message(mailbox, envelope_ids[vim.fn.line('.')])
+                end, { buffer = bufnr })
             end
         end)
     end)
