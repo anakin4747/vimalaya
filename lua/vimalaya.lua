@@ -234,7 +234,7 @@ function M.send_response()
     end
 
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    local response_start
+    local response_start = is_new_message and 0 or nil
     local response_markers = {
         ['--- Reply ---'] = true,
         ['--- Reply All ---'] = true,
@@ -290,7 +290,11 @@ function M.send_response()
         vim.schedule(function()
             if result.code == 0 then
                 if vim.trim(result.stdout) == 'Message successfully sent' and vim.api.nvim_buf_is_valid(bufnr) then
-                    vim.api.nvim_buf_set_lines(bufnr, response_start - 3, -1, false, {})
+                    if is_new_message then
+                        vim.api.nvim_buf_delete(bufnr, { force = true })
+                    else
+                        vim.api.nvim_buf_set_lines(bufnr, response_start - 3, -1, false, {})
+                    end
                 end
                 vim.notify(vim.trim(result.stdout))
             else

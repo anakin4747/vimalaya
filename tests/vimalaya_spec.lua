@@ -674,6 +674,45 @@ describe(":Mail", function()
         assert.equal('Message successfully sent', message)
     end)
 
+    it("send shows successful new messages in :messages", function()
+        vim.cmd('Mail new')
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+            'to: Example Sender <sender@example.test>',
+            'cc: Example Copy <copy@example.test>',
+            'bcc: Example Blind Copy <blind-copy@example.test>',
+            'subject: Re: First example message',
+            'attach: ',
+            '',
+            'Thanks.',
+        })
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_exec2('messages', { output = true }).output:find('Message successfully sent', 1, true) ~= nil
+        end))
+    end)
+
+    it("send closes new email buffers after successful sends", function()
+        vim.cmd('Mail new')
+        local email = vim.api.nvim_get_current_buf()
+        vim.api.nvim_buf_set_lines(email, 0, -1, false, {
+            'to: Example Sender <sender@example.test>',
+            'cc: Example Copy <copy@example.test>',
+            'bcc: Example Blind Copy <blind-copy@example.test>',
+            'subject: Re: First example message',
+            'attach: ',
+            '',
+            'Thanks.',
+        })
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return not vim.api.nvim_buf_is_valid(email)
+        end))
+    end)
+
     it("send reports Himalaya stdout and stderr when sending fails", function()
         local message
         open_first_message()
