@@ -110,6 +110,12 @@ describe(":Mail", function()
         assert.equal(count + 1, #vim.api.nvim_list_bufs())
     end)
 
+    it("new opens an email buffer with recipient and subject fields", function()
+        vim.cmd('Mail new')
+
+        assert.same({ 'To: ', 'Cc: ', 'Subject: ' }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+    end)
+
     it("names the main menu buffer", function()
         vim.cmd('Mail')
 

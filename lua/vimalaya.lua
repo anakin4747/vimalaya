@@ -2,6 +2,14 @@ local M = {}
 
 local main_menu_name = "vimalaya main menu"
 
+function M.open_new_message()
+    local bufnr = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya new email')
+    vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'To: ', 'Cc: ', 'Subject: ' })
+    vim.api.nvim_set_current_buf(bufnr)
+end
+
 function M.open_message(mailbox, id, subject)
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
         local has_mailbox, message_mailbox = pcall(vim.api.nvim_buf_get_var, bufnr, "vimalaya_message_mailbox")

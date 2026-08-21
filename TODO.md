@@ -49,10 +49,6 @@ To:, Cc:, and Subject: fields
 
 ---
 
-:Mail new opens a new email buffer with To:, Cc:, and Subject: fields
-
----
-
 :Mail displays a clear error message if himalaya is not unlocked
 
 ---
