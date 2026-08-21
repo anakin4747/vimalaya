@@ -71,14 +71,17 @@ When to use this workflow:
 3. Repeat step 2. of the Test Only Workflow but instead assert that the test is
    now passing.
 
-4. Stage the added change to ./tests/vimalaya_spec.lua, lua/vimalaya.lua, and
-   plugin/vimalaya.lua
+4. If the feature was provided from a TODO in TODO.md move that TODO entry to
+   .DONE.md.
 
-5. Run `git status --short` to ensure your commit is only going to include
-   modifications to ./tests/vimalaya_spec.lua, lua/vimalaya.lua, and
-   plugin/vimalaya.lua
+5. Stage the added change to ./tests/vimalaya_spec.lua, lua/vimalaya.lua,
+   plugin/vimalaya.lua, TODO.md, and .DONE.md
 
-6. Then commit your change with a commit that uses a `feat:` prefix. If the
+6. Run `git status --short` to ensure your commit is only going to include
+   modifications to ./tests/vimalaya_spec.lua, lua/vimalaya.lua,
+   plugin/vimalaya.lua, TODO.md, and .DONE.md
+
+7. Then commit your change with a commit that uses a `feat:` prefix. If the
    test specification was given containing a line such as:
    ```
    :Mail foo bar
@@ -90,12 +93,12 @@ When to use this workflow:
    If the commit introduces a group of :Mail features then the commit message
    should do its best to summarize the group features.
 
-7. Run `git show` to ensure your commit is atommic and only making the minimal
+8. Run `git show` to ensure your commit is atommic and only making the minimal
    modifications necessary to achieve the requested feature.
 
-8. Run `make` to lint check your commit message.
+9. Run `make` to lint check your commit message.
 
-9. Stop.
+10. Stop.
 
 ## Implementation Only Workflows
 
