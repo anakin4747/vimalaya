@@ -250,6 +250,25 @@ describe(":Mail", function()
         assert.same(vim.fn.readfile('tests/message.txt'), vim.api.nvim_buf_get_lines(0, 0, -1, false))
     end)
 
+    it("reuses an open email buffer", function()
+        open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+        end))
+        local mailbox = vim.api.nvim_get_current_buf()
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'From: Example Sender <sender@example.test>'
+        end))
+        local expected = vim.api.nvim_get_current_buf()
+        vim.api.nvim_set_current_buf(mailbox)
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.equal(expected, vim.api.nvim_get_current_buf())
+    end)
+
     it("reuses a currently active buffer", function()
         vim.cmd('Mail')
         local expected = vim.api.nvim_buf_get_name(0)

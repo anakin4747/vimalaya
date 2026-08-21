@@ -3,8 +3,19 @@ local M = {}
 local main_menu_name = "vimalaya main menu"
 
 function M.open_message(mailbox, id, subject)
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        local has_mailbox, message_mailbox = pcall(vim.api.nvim_buf_get_var, bufnr, "vimalaya_message_mailbox")
+        local has_id, message_id = pcall(vim.api.nvim_buf_get_var, bufnr, "vimalaya_message_id")
+        if has_mailbox and has_id and message_mailbox == mailbox and message_id == tostring(id) then
+            vim.api.nvim_set_current_buf(bufnr)
+            return
+        end
+    end
+
     local bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya ' .. subject)
+    vim.api.nvim_buf_set_var(bufnr, "vimalaya_message_mailbox", mailbox)
+    vim.api.nvim_buf_set_var(bufnr, "vimalaya_message_id", tostring(id))
     vim.api.nvim_set_current_buf(bufnr)
 
     vim.system({ 'himalaya', 'message', 'read', '--mailbox', mailbox, id }, {}, function(result)
