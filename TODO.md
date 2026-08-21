@@ -96,3 +96,18 @@ b4 integration and git send mail support
 
 the header info of an email is folded by default to have that easily accessible
 but not the main focus
+
+---
+
+:Mail new and :Mail send should show the himalaya successfully sent message in :messages
+It should also close the new email buffer if sending was successful
+
+---
+
+Bug with :Mail new and :Mail send
+```
+Error: No `From:` header found in raw message
+
+Suggestions:
+ - Run with --log-level to enable more verbose logs
+```
