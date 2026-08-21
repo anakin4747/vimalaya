@@ -1,0 +1,17 @@
+[accounts.gmail]
+
+default = true
+
+imap.server = "imaps://imap.gmail.com:993"
+imap.sasl.plain.username = "example@gmail.com"
+imap.sasl.plain.password.command = "pass show gmail"
+
+smtp.server = "smtps://smtp.gmail.com:465"
+smtp.sasl.plain.username = "example@gmail.com"
+smtp.sasl.plain.password.command = "pass show gmail"
+
+mailbox.alias.inbox = "INBOX"
+mailbox.alias.sent = "[Gmail]/Sent Mail"
+mailbox.alias.drafts = "[Gmail]/Drafts"
+mailbox.alias.trash = "[Gmail]/Trash"
+mailbox.alias.archive = "[Gmail]/All Mail"

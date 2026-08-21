@@ -4,5 +4,6 @@ name='vimalaya'
 
 [build]
 command=""
+docker_run_args="-v .cqfd/docker/config.toml:$HOME/.config/himalaya/config.toml"
 
 # vi: ft=ini
