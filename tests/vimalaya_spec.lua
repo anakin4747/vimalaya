@@ -224,6 +224,31 @@ describe(":Mail", function()
         assert.is_true(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'send'))
     end)
 
+    it("does not offer send completion in email buffers without a response section", function()
+        open_first_message()
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'send'))
+    end)
+
+    it("does not offer send completion in mailbox buffers", function()
+        open_inbox_mailbox()
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'send'))
+    end)
+
+    it("does not offer send completion in main menu buffers", function()
+        vim.cmd('Mail')
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'send'))
+    end)
+
+    it("does not offer send completion in incomplete response sections", function()
+        open_first_message()
+        vim.api.nvim_buf_set_lines(0, -1, -1, false, { '', '', '--- Reply ---', 'to: recipient@example.test' })
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'send'))
+    end)
+
     it("reports ambiguous subcommand shorthands and their possible completions", function()
         local message
         open_first_message()

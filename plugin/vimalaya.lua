@@ -40,12 +40,25 @@ end, {
                 ['--- Reply All ---'] = true,
                 ['--- Forward ---'] = true,
             }
-            for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+            local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+            local response_start
+            for index, line in ipairs(lines) do
                 if response_markers[line] then
-                    can_send = true
-                    break
+                    response_start = index
                 end
             end
+            local fields = {}
+            for index = (response_start or #lines) + 1, #lines do
+                if lines[index] == '' then
+                    break
+                end
+
+                local name = lines[index]:match('^([^:]+):')
+                if name then
+                    fields[name:lower()] = true
+                end
+            end
+            can_send = response_start ~= nil and fields.to and fields.cc and fields.subject
         end
         if can_send then
             table.insert(subcommands, 'send')

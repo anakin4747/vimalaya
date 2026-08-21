@@ -23,15 +23,6 @@ the cursor while pending
 
 ---
 
-:Mail send is NOT offered as a possible completion in email buffers without a reply, replyall, or forward section
-:Mail send is NOT offered as a possible completion in mailbox buffers
-:Mail send is NOT offered as a possible completion in main menu buffers
-
-Completion for :Mail send will only be available in email buffers once they
-have a `--- Reply ---`, `--- Reply All ---`, or `--- Forward ---` section with
-To:, Cc:, and Subject: fields
-
----
 
 :Mail send fails to send an email if the To: field is empty
 
