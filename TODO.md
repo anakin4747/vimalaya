@@ -91,3 +91,8 @@ mispelled or not a valid email address
 ---
 
 b4 integration and git send mail support
+
+---
+
+the header info of an email is folded by default to have that easily accessible
+but not the main focus
