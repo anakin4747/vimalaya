@@ -104,11 +104,6 @@ syntax error highlighting on suspiscous emails and email metadata
 
 ---
 
-:Mail shall reuse the same window if the vimalaya main menu buffer is already
-open
-
----
-
 email chains will be highlighted with the same colors in the mailbox buffer
 
 ---
