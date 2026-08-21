@@ -64,10 +64,6 @@ describe(":Mail", function()
         assert.equal('himalaya is not installed', message)
     end)
 
-    it("completes subcommands", function()
-        assert.same({ 'close', 'forward', 'reply', 'replyall' }, vim.fn.getcompletion('Mail ', 'cmdline'))
-    end)
-
     it("completes partial subcommands", function()
         assert.same({ 'close' }, vim.fn.getcompletion('Mail cl', 'cmdline'))
     end)
@@ -169,6 +165,66 @@ describe(":Mail", function()
         end))
         vim.api.nvim_buf_set_lines(0, 2, 2, false, { 'Cc: Example Copy <copy@example.test>' })
     end
+
+    it("completes subcommands", function()
+        open_first_message()
+
+        assert.same({ 'close', 'forward', 'reply', 'replyall' }, vim.fn.getcompletion('Mail ', 'cmdline'))
+    end)
+
+    it("offers reply completion in email buffers", function()
+        open_first_message()
+
+        assert.is_true(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'reply'))
+    end)
+
+    it("offers replyall completion in email buffers", function()
+        open_first_message()
+
+        assert.is_true(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'replyall'))
+    end)
+
+    it("offers forward completion in email buffers", function()
+        open_first_message()
+
+        assert.is_true(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'forward'))
+    end)
+
+    it("does not offer reply completion in mailbox buffers", function()
+        open_inbox_mailbox()
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'reply'))
+    end)
+
+    it("does not offer replyall completion in mailbox buffers", function()
+        open_inbox_mailbox()
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'replyall'))
+    end)
+
+    it("does not offer forward completion in mailbox buffers", function()
+        open_inbox_mailbox()
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'forward'))
+    end)
+
+    it("does not offer reply completion in main menu buffers", function()
+        vim.cmd('Mail')
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'reply'))
+    end)
+
+    it("does not offer replyall completion in main menu buffers", function()
+        vim.cmd('Mail')
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'replyall'))
+    end)
+
+    it("does not offer forward completion in main menu buffers", function()
+        vim.cmd('Mail')
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'forward'))
+    end)
 
     it("opens a mailbox buffer", function()
         local main_menu = open_inbox_mailbox()

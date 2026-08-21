@@ -28,18 +28,6 @@ CCs.
 
 ---
 
-Completion for these subcommands will only be available in email buffers
-
-:Mail reply is offered as a possible completion in email buffers
-:Mail replyall is offered as a possible completion in email buffers
-:Mail forward is offered as a possible completion in email buffers
-:Mail reply is NOT offered as a possible completion in mailbox buffers
-:Mail replyall is NOT offered as a possible completion in mailbox buffers
-:Mail forward is NOT offered as a possible completion in mailbox buffers
-:Mail reply is NOT offered as a possible completion in main menu buffers
-:Mail replyall is NOT offered as a possible completion in main menu buffers
-:Mail forward is NOT offered as a possible completion in main menu buffers
-
 :Mail reply is NOT a valid subcommand in mailbox buffers
 :Mail replyall is NOT a valid subcommand in mailbox buffers
 :Mail forward is NOT a valid subcommand in mailbox buffers
