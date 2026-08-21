@@ -101,10 +101,5 @@ b4 integration and git send mail support
 
 ---
 
-highlighting a file path and :'<,'>Mail will fail if the highlighted text is
-not a valid file
-
----
-
 if several filepaths are highlighted and actually files they are all added with
 their own attach: field. One per attachement

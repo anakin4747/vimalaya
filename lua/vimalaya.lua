@@ -177,6 +177,11 @@ function M.append_response(kind)
 end
 
 function M.attach_path(path)
+    if vim.fn.filereadable(path) ~= 1 then
+        vim.notify(':Mail cannot attach ' .. path .. ': not a file', vim.log.levels.ERROR)
+        return
+    end
+
     if not last_compose_bufnr or not vim.api.nvim_buf_is_valid(last_compose_bufnr) then
         M.open_new_message()
     end

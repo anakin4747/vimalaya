@@ -737,6 +737,23 @@ describe(":Mail", function()
         assert.is_true(vim.tbl_contains(vim.api.nvim_buf_get_lines(0, 0, -1, false), 'attach: /bin/bash'))
     end)
 
+    it("rejects ranged attachment paths that are not files", function()
+        local message
+        local level
+        local source = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_buf_set_lines(source, 0, -1, false, { '/not/a/real/vimalaya-attachment' })
+        vim.api.nvim_set_current_buf(source)
+        vim.notify = function(notification, notification_level)
+            message = notification
+            level = notification_level
+        end
+
+        vim.cmd('1,1Mail')
+
+        assert.equal(':Mail cannot attach /not/a/real/vimalaya-attachment: not a file', message)
+        assert.equal(vim.log.levels.ERROR, level)
+    end)
+
     local function assert_send_removes_response(kind)
         open_first_message()
         local original = vim.api.nvim_buf_get_lines(0, 0, -1, false)
