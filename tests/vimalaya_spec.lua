@@ -610,4 +610,29 @@ describe(":Mail", function()
         end))
         assert.equal('Message successfully sent', message)
     end)
+
+    it("send reports Himalaya stdout and stderr when sending fails", function()
+        local message
+        open_first_message()
+        vim.cmd('Mail reply')
+        vim.system = function(_, _, callback)
+            vim.schedule(function()
+                callback({
+                    code = 1,
+                    stdout = 'Himalaya stdout\n',
+                    stderr = 'Himalaya stderr\n',
+                })
+            end)
+        end
+        vim.notify = function(notification)
+            message = notification
+        end
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return message ~= nil
+        end))
+        assert.equal('Himalaya stdout\nHimalaya stderr\n', message)
+    end)
 end)

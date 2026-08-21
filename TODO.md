@@ -28,11 +28,6 @@ the cursor while pending
 
 ---
 
-When :Mail send fails the whole himalaya command stdout and stderr should be
-displayed to the user so it can be viewed with :messages
-
----
-
 :Mail send removes the reply, replyall, or forward section from the email buffer after successfully sending the email
 
 ---

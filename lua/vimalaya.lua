@@ -224,6 +224,8 @@ function M.send_response()
         vim.schedule(function()
             if result.code == 0 then
                 vim.notify(vim.trim(result.stdout))
+            else
+                vim.notify(result.stdout .. result.stderr, vim.log.levels.ERROR)
             end
         end)
     end)
