@@ -289,4 +289,25 @@ describe(":Mail", function()
 
         assert.equal(expected, actual)
     end)
+
+    it("close closes all vimalaya buffers", function()
+        local unrelated = vim.api.nvim_create_buf(true, false)
+        local main_menu = open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+        end))
+        local mailbox = vim.api.nvim_get_current_buf()
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'From: Example Sender <sender@example.test>'
+        end))
+        local message = vim.api.nvim_get_current_buf()
+
+        vim.cmd('Mail close')
+
+        assert.is_false(vim.api.nvim_buf_is_valid(main_menu))
+        assert.is_false(vim.api.nvim_buf_is_valid(mailbox))
+        assert.is_false(vim.api.nvim_buf_is_valid(message))
+        assert.is_true(vim.api.nvim_buf_is_valid(unrelated))
+    end)
 end)

@@ -14,6 +14,7 @@ function M.open_message(mailbox, id, subject)
 
     local bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya ' .. subject)
+    vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_message_mailbox", mailbox)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_message_id", tostring(id))
     vim.api.nvim_set_current_buf(bufnr)
@@ -39,6 +40,7 @@ end
 function M.open_mailbox(mailbox)
     local bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya ' .. mailbox .. ' mailbox')
+    vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
     vim.bo[bufnr].readonly = true
     vim.api.nvim_set_current_buf(bufnr)
 
@@ -85,6 +87,7 @@ function M.open_main_menu()
 
     local bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' ' .. main_menu_name)
+    vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_main_menu", true)
     vim.bo[bufnr].readonly = true
     vim.keymap.set('n', '<CR>', function()
@@ -109,6 +112,14 @@ function M.open_main_menu()
             vim.bo[bufnr].readonly = true
         end)
     end)
+end
+
+function M.close()
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        if pcall(vim.api.nvim_buf_get_var, bufnr, "vimalaya") then
+            vim.api.nvim_buf_delete(bufnr, { force = true })
+        end
+    end
 end
 
 return M
