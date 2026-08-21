@@ -113,7 +113,7 @@ describe(":Mail", function()
     it("new opens an email buffer with recipient and subject fields", function()
         vim.cmd('Mail new')
 
-        assert.same({ 'To: ', 'Cc: ', 'Bcc: ', 'Subject: ' }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+        assert.same({ 'to: ', 'cc: ', 'bcc: ', 'subject: ' }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
     end)
 
     it("names the main menu buffer", function()
@@ -479,10 +479,10 @@ describe(":Mail", function()
             '',
             '',
             '--- Reply ---',
-            'To: Example Sender <sender@example.test>',
-            'Cc: Example Copy <copy@example.test>',
-            'Bcc: ',
-            'Subject: Re: First example message',
+            'to: Example Sender <sender@example.test>',
+            'cc: Example Copy <copy@example.test>',
+            'bcc: ',
+            'subject: Re: First example message',
             '',
         }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
     end)
@@ -496,10 +496,10 @@ describe(":Mail", function()
             '',
             '',
             '--- Reply All ---',
-            'To: Example Sender <sender@example.test>',
-            'Cc: Example Copy <copy@example.test>',
-            'Bcc: ',
-            'Subject: Re: First example message',
+            'to: Example Sender <sender@example.test>',
+            'cc: Example Copy <copy@example.test>',
+            'bcc: ',
+            'subject: Re: First example message',
             '',
         }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
     end)
@@ -513,10 +513,10 @@ describe(":Mail", function()
             '',
             '',
             '--- Forward ---',
-            'To: Example Sender <sender@example.test>',
-            'Cc: Example Copy <copy@example.test>',
-            'Bcc: ',
-            'Subject: Fwd: First example message',
+            'to: Example Sender <sender@example.test>',
+            'cc: Example Copy <copy@example.test>',
+            'bcc: ',
+            'subject: Fwd: First example message',
             '',
         }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
     end)
