@@ -108,3 +108,7 @@ Need to handle drafts in reply, replyall, forward, and new subcommands
 
 caching needs to be implemented to avoid delays going from main menu to mailbox
 buffers and going from mailbox buffers to email buffers
+
+---
+
+K hover headers in email buffers show the specification for that header
