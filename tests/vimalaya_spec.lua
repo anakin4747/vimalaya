@@ -44,6 +44,42 @@ describe(":Mail", function()
         end)
     end)
 
+    it("schedules buffer access from system callbacks", function()
+        -- Prevent E5560: nvim_buf_is_valid must not be called in a fast event context.
+        local schedule = vim.schedule
+        local is_valid = vim.api.nvim_buf_is_valid
+        local scheduled = false
+        local accessed_in_callback = false
+
+        vim.schedule = function(callback)
+            schedule(function()
+                scheduled = true
+                callback()
+                scheduled = false
+            end)
+        end
+        vim.api.nvim_buf_is_valid = function(bufnr)
+            accessed_in_callback = accessed_in_callback or not scheduled
+            return is_valid(bufnr)
+        end
+        vim.system = function(_, _, callback)
+            callback({
+                code = 0,
+                stdout = table.concat(vim.fn.readfile('tests/mailboxes.json'), '\n'),
+                stderr = '',
+            })
+        end
+
+        vim.cmd('Mail')
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'Inbox'
+        end))
+        vim.schedule = schedule
+        vim.api.nvim_buf_is_valid = is_valid
+
+        assert.is_false(accessed_in_callback)
+    end)
+
     it("creates a new buffer", function()
         local count = #vim.api.nvim_list_bufs()
         vim.cmd('Mail')
