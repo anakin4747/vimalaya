@@ -19,6 +19,7 @@ function M.open_main_menu()
     local bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(bufnr, main_menu_name)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_main_menu", true)
+    vim.bo[bufnr].readonly = true
     vim.api.nvim_set_current_buf(bufnr)
 
     vim.system({ 'himalaya', 'mailbox', 'list', '--json' }, {}, function(result)
@@ -34,7 +35,9 @@ function M.open_main_menu()
 
         vim.schedule(function()
             if vim.api.nvim_buf_is_valid(bufnr) then
+                vim.bo[bufnr].readonly = false
                 vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+                vim.bo[bufnr].readonly = true
             end
         end)
     end)

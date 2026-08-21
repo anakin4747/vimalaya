@@ -54,6 +54,12 @@ describe(":Mail", function()
         assert.equal(vim.fn.getcwd() .. '/vimalaya main menu', vim.api.nvim_buf_get_name(0))
     end)
 
+    it("makes the main menu buffer readonly", function()
+        vim.cmd('Mail')
+
+        assert.is_true(vim.bo.readonly)
+    end)
+
     it("lists mailboxes in the main menu", function()
         vim.cmd('Mail')
 
