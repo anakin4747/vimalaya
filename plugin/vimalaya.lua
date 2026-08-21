@@ -42,7 +42,7 @@ end, {
     nargs = '?',
     range = true,
     complete = function(arg_lead)
-        local subcommands = { 'close' }
+        local subcommands = { 'close', 'new' }
         if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_main_menu')
             or pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_mailbox') then
             table.insert(subcommands, 'refresh')

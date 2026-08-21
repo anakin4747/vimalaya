@@ -69,6 +69,10 @@ describe(":Mail", function()
         assert.same({ 'close' }, vim.fn.getcompletion('Mail cl', 'cmdline'))
     end)
 
+    it("always offers new completion", function()
+        assert.same({ 'new' }, vim.fn.getcompletion('Mail new', 'cmdline'))
+    end)
+
     it("does not call nvim_buf_is_valid in a fast event context", function()
         -- Prevent E5560: nvim_buf_is_valid must not be called in a fast event context.
         local schedule = vim.schedule
@@ -198,7 +202,7 @@ describe(":Mail", function()
     it("completes subcommands", function()
         open_first_message()
 
-        assert.same({ 'close', 'forward', 'reply', 'replyall' }, vim.fn.getcompletion('Mail ', 'cmdline'))
+        assert.same({ 'close', 'new', 'forward', 'reply', 'replyall' }, vim.fn.getcompletion('Mail ', 'cmdline'))
     end)
 
     it("offers reply completion in email buffers", function()
