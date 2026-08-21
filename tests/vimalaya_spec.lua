@@ -82,7 +82,7 @@ describe(":Mail", function()
         }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
     end)
 
-    it("opens a mailbox buffer with its envelopes", function()
+    local function open_inbox_mailbox()
         vim.cmd('Mail')
         assert.is_true(vim.wait(1000, function()
             return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'Inbox'
@@ -90,16 +90,36 @@ describe(":Mail", function()
         local main_menu = vim.api.nvim_get_current_buf()
 
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+        return main_menu
+    end
+
+    it("opens a mailbox buffer", function()
+        local main_menu = open_inbox_mailbox()
 
         assert.is_true(vim.wait(1000, function()
             return vim.api.nvim_get_current_buf() ~= main_menu
         end))
+    end)
+
+    it("names mailbox buffers", function()
+        open_inbox_mailbox()
+
         assert.is_true(vim.startswith(
             vim.api.nvim_buf_get_name(0),
             vim.fn.fnamemodify(vim.fn.tempname(), ':h') .. '/'
         ))
         assert.is_true(vim.endswith(vim.api.nvim_buf_get_name(0), ' vimalaya Inbox mailbox'))
+    end)
+
+    it("makes mailbox buffers readonly", function()
+        open_inbox_mailbox()
+
         assert.is_true(vim.bo.readonly)
+    end)
+
+    it("lists envelopes in mailbox buffers", function()
+        open_inbox_mailbox()
+
         assert.is_true(vim.wait(1000, function()
             return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'First example message'
         end))
