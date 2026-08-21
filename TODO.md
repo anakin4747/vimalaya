@@ -96,12 +96,6 @@ Maybe Unread emails have specific highlighting
 
 ---
 
-subcommands accept shorthands like ex-commands
-:Mail c is a shorthand for :Mail close
-:Mail r is a shorthand for :Mail close
-
----
-
 Need to handle drafts in reply, replyall, forward, and new subcommands
 
 ---
