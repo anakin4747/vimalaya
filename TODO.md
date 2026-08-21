@@ -45,6 +45,11 @@ To:, Cc:, and Subject: fields
 
 ---
 
+When :Mail send fails the whole himalaya command stdout and stderr should be
+displayed to the user so it can be viewed with :messages
+
+---
+
 :Mail send removes the reply, replyall, or forward section from the email buffer after successfully sending the email
 
 ---
@@ -115,3 +120,53 @@ Date and time of envelopes are more human readable
 
 all the subjects of envelopes are aligned instead of depending on the length of
 the date/time
+
+---
+
+Red syntax highlighting for emails not found in cache meaning it may be
+mispelled or not a valid email address
+
+---
+
+b4 integration and git send mail support
+
+---
+
+highlighting a file path and :'<,'>Mail will attach that file to the last email
+buffer that was written to if none it should be attached to a new email buffer
+as a header field like:
+
+```
+--- Reply ---
+to: <original sender>
+cc: <original cc>
+subject: Re: <original subject>
+attach: <file path>
+```
+
+---
+
+highlighting a file path and :'<,'>Mail will fail if the highlighted text is
+not a valid file
+
+---
+
+if several filepaths are highlighted and actually files they are all added with
+their own attach: field. One per attachement
+
+---
+
+Support arbitrary number of to:s, cc:s, bcc:s, and attach:s in email buffers
+
+---
+
+Add attach: fields to add filepaths to attach files to
+
+```
+--- Reply ---
+to: <original sender>
+cc: <original cc>
+subject: Re: <original subject>
+attach: /bin/bash
+```
+
