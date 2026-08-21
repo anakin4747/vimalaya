@@ -74,10 +74,6 @@ To:, Cc:, and Subject: fields
 
 ---
 
-:Mail displays a clear error message if himalaya is not installed
-
----
-
 :Mail displays a clear error message if himalaya is not unlocked
 
 ---

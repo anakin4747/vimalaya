@@ -72,6 +72,11 @@ function M.open_mailbox(mailbox)
 end
 
 function M.open_main_menu()
+    if vim.fn.executable('himalaya') == 0 then
+        vim.notify('himalaya is not installed', vim.log.levels.ERROR)
+        return
+    end
+
     local is_main_menu = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_main_menu")
     if is_main_menu then
         return

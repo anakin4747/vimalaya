@@ -6,9 +6,13 @@ local after_each = busted.after_each
 
 
 describe(":Mail", function()
+    local executable
+    local notify
     local system
 
     before_each(function()
+        executable = vim.fn.executable
+        notify = vim.notify
         system = vim.system
         vim.system = function(command, _, callback)
             local fixtures = {
@@ -35,6 +39,8 @@ describe(":Mail", function()
     end)
 
     after_each(function()
+        vim.fn.executable = executable
+        vim.notify = notify
         vim.system = system
     end)
 
@@ -42,6 +48,20 @@ describe(":Mail", function()
         assert.has_no.errors(function()
             vim.cmd('Mail')
         end)
+    end)
+
+    it("displays a clear error when himalaya is not installed", function()
+        local message
+        vim.fn.executable = function()
+            return 0
+        end
+        vim.notify = function(notification)
+            message = notification
+        end
+
+        vim.cmd('Mail')
+
+        assert.equal('himalaya is not installed', message)
     end)
 
     it("completes subcommands", function()
