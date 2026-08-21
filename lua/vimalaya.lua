@@ -167,7 +167,6 @@ function M.append_response(kind)
         'Cc: ' .. (headers.cc or ''),
         'Subject: ' .. action.subject .. (headers.subject or ''),
         '',
-        '<Response>',
     })
 end
 

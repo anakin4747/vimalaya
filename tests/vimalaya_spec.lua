@@ -483,8 +483,7 @@ describe(":Mail", function()
             'Cc: Example Copy <copy@example.test>',
             'Subject: Re: First example message',
             '',
-            '<Response>',
-        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -8, -1, false))
     end)
 
     it("replyall appends a Reply All header to email buffers", function()
@@ -500,8 +499,7 @@ describe(":Mail", function()
             'Cc: Example Copy <copy@example.test>',
             'Subject: Re: First example message',
             '',
-            '<Response>',
-        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -8, -1, false))
     end)
 
     it("forward appends a Forward header to email buffers", function()
@@ -517,7 +515,6 @@ describe(":Mail", function()
             'Cc: Example Copy <copy@example.test>',
             'Subject: Fwd: First example message',
             '',
-            '<Response>',
-        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -8, -1, false))
     end)
 end)
