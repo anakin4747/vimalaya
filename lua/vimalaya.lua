@@ -3,6 +3,38 @@ local M = {}
 local main_menu_name = "vimalaya main menu"
 local last_compose_bufnr
 
+local function configured_email()
+    local config_dir = vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')
+    local ok, lines = pcall(vim.fn.readfile, config_dir .. '/himalaya/config.toml')
+    if not ok then
+        return
+    end
+
+    local accounts = {}
+    local account
+    for _, line in ipairs(lines) do
+        account = line:match('^%[accounts%.([^%]]+)%]$') or account
+        if account then
+            accounts[account] = accounts[account] or {}
+            local key, value = line:match('^([%w%.]+)%s*=%s*(.-)%s*$')
+            if value then
+                value = value:match('^"(.*)"$') or value
+            end
+            if key == 'default' then
+                accounts[account].default = value == 'true'
+            elseif key == 'smtp.sasl.plain.username' then
+                accounts[account].email = value
+            end
+        end
+    end
+
+    for _, details in pairs(accounts) do
+        if details.default then
+            return details.email
+        end
+    end
+end
+
 function M.open_new_message()
     local bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya new email')
@@ -271,6 +303,10 @@ function M.send_response()
     end
 
     local command = { 'himalaya', 'message', 'compose' }
+    local email = configured_email()
+    if email then
+        vim.list_extend(command, { '--from', email })
+    end
     for _, name in ipairs({ 'to', 'cc', 'bcc' }) do
         for _, value in ipairs(headers[name]) do
             vim.list_extend(command, { '--' .. name, value })

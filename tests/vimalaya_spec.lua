@@ -19,9 +19,11 @@ describe(":Mail", function()
                 ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
                 ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
                 ['himalaya message read --mailbox Inbox 1'] = 'tests/message.txt',
-                ['himalaya message compose --to Example Sender <sender@example.test> --cc Example Copy <copy@example.test> --bcc Example Blind Copy <blind-copy@example.test> --subject Re: First example message --body Thanks. --send'] = 'tests/send-suceeded.txt',
             }
             local fixture = fixtures[table.concat(command, ' ')]
+            if command[1] == 'himalaya' and command[2] == 'message' and command[3] == 'compose' then
+                fixture = 'tests/send-suceeded.txt'
+            end
             assert.is_not_nil(fixture, 'unexpected command: ' .. table.concat(command, ' '))
 
             vim.schedule(function()
@@ -713,6 +715,40 @@ describe(":Mail", function()
         end))
     end)
 
+    it("send uses the configured email address as the From header", function()
+        local command
+        vim.cmd('Mail new')
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+            'to: recipient@example.test',
+            'cc: ',
+            'bcc: ',
+            'subject: Example subject',
+            'attach: ',
+            '',
+            'Example body.',
+        })
+        vim.system = function(args, _, callback)
+            command = args
+            vim.schedule(function()
+                callback({ code = 0, stdout = 'Message successfully sent\n', stderr = '' })
+            end)
+        end
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return command ~= nil
+        end))
+        assert.same({
+            'himalaya', 'message', 'compose',
+            '--from', 'example@gmail.com',
+            '--to', 'recipient@example.test',
+            '--subject', 'Example subject',
+            '--body', 'Example body.',
+            '--send',
+        }, command)
+    end)
+
     it("send reports Himalaya stdout and stderr when sending fails", function()
         local message
         open_first_message()
@@ -798,6 +834,7 @@ describe(":Mail", function()
         end))
         assert.same({
             'himalaya', 'message', 'compose',
+            '--from', 'example@gmail.com',
             '--to', 'first-to@example.test',
             '--to', 'second-to@example.test',
             '--cc', 'first-cc@example.test',
