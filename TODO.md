@@ -23,9 +23,6 @@ the cursor while pending
 
 ---
 
-:Mail send is offered as a possible completion in email buffers with a reply section
-:Mail send is offered as a possible completion in email buffers with a replyall section
-:Mail send is offered as a possible completion in email buffers with a forward section
 :Mail send is NOT offered as a possible completion in email buffers without a reply, replyall, or forward section
 :Mail send is NOT offered as a possible completion in mailbox buffers
 :Mail send is NOT offered as a possible completion in main menu buffers

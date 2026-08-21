@@ -33,6 +33,23 @@ end, {
         if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_message_id') then
             vim.list_extend(subcommands, { 'forward', 'reply', 'replyall' })
         end
+        local can_send = pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_new_message')
+        if not can_send then
+            local response_markers = {
+                ['--- Reply ---'] = true,
+                ['--- Reply All ---'] = true,
+                ['--- Forward ---'] = true,
+            }
+            for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+                if response_markers[line] then
+                    can_send = true
+                    break
+                end
+            end
+        end
+        if can_send then
+            table.insert(subcommands, 'send')
+        end
 
         return vim.tbl_filter(function(subcommand)
             return vim.startswith(subcommand, arg_lead)

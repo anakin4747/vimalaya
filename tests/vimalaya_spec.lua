@@ -197,6 +197,33 @@ describe(":Mail", function()
         assert.is_true(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'forward'))
     end)
 
+    it("offers send completion in email buffers with a reply section", function()
+        open_first_message()
+        vim.cmd('Mail reply')
+
+        assert.is_true(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'send'))
+    end)
+
+    it("offers send completion in email buffers with a replyall section", function()
+        open_first_message()
+        vim.cmd('Mail replyall')
+
+        assert.is_true(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'send'))
+    end)
+
+    it("offers send completion in email buffers with a forward section", function()
+        open_first_message()
+        vim.cmd('Mail forward')
+
+        assert.is_true(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'send'))
+    end)
+
+    it("offers send completion in new email buffers", function()
+        vim.cmd('Mail new')
+
+        assert.is_true(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'send'))
+    end)
+
     it("reports ambiguous subcommand shorthands and their possible completions", function()
         local message
         open_first_message()
