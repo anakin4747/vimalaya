@@ -119,14 +119,6 @@ email chains will be highlighted with the same colors in the mailbox buffer
 
 ---
 
-:Mail reuses open email buffers
-
-If an email is opened from the mailbox menu then the user jumps back to the
-mailbox menu and opens the same email, the email buffer should be reused
-instead of creating a new one since it is the same email.
-
----
-
 Read and unread support
 
 Maybe Unread emails have specific highlighting
