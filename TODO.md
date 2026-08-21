@@ -40,6 +40,13 @@ Completion for these subcommands will only be available in email buffers
 :Mail replyall is NOT offered as a possible completion in main menu buffers
 :Mail forward is NOT offered as a possible completion in main menu buffers
 
+:Mail reply is NOT a valid subcommand in mailbox buffers
+:Mail replyall is NOT a valid subcommand in mailbox buffers
+:Mail forward is NOT a valid subcommand in mailbox buffers
+:Mail reply is NOT a valid subcommand in main menu buffers
+:Mail replyall is NOT a valid subcommand in main menu buffers
+:Mail forward is NOT a valid subcommand in main menu buffers
+
 ---
 
 :Mail send is offered as a possible completion in email buffers with a reply section
@@ -132,7 +139,9 @@ Maybe Unread emails have specific highlighting
 
 ---
 
-:Mail subcommands accept shorthands like ex-commands
+subcommands accept shorthands like ex-commands
+:Mail c is a shorthand for :Mail close
+:Mail r is a shorthand for :Mail close
 
 ---
 
