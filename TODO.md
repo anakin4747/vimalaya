@@ -90,6 +90,73 @@ the cursor while pending
 :Mail replyall
 :Mail forward
 
+These commands while in an email buffer will append the following to the email buffer:
+
+```
+--- Reply ---
+To: <original sender>
+Cc: <original cc>
+
+<Response>
+```
+or
+```
+--- Reply All ---
+To: <original senders>
+Cc: <original cc>
+
+<Response>
+```
+or
+```
+--- Forward ---
+To: <original senders>
+Cc: <original cc>
+
+<Response>
+```
+
+Then :Mail send will sned the response email to the appropriate recipients and
+CCs.
+
+---
+
+Completion for these subcommands will only be available in email buffers
+
+:Mail reply
+:Mail replyall
+:Mail forward
+
+---
+
+Completion for :Mail send will only be available in email buffers once they
+have a `--- Reply ---`, `--- Reply All ---`, or `--- Forward ---` section with
+To: and Cc: fields
+
+---
+
+:Mail displays a clear error message if himalaya is not installed
+
+:Mail displays a clear error message if himalaya is not unlocked
+
+---
+
+:Mail chain will open a buffer similar to the mailbox buffer but instead show
+all the emails in the same thread as the email buffer you are currently in
+
+This command is only available in email buffers that have chains
+
+Since searching for chains will take time, start searching for chains
+asynchronously as soon as the email buffer is opened and contains info that
+indicates its a part of a chain
+
+---
+
+Completion of emails in an email buffer after To: and Cc: fields
+
+vimalaya will cache a list of emails referenced in current mailbox buffers so
+that this information can be completed quickly
+
 ---
 
 syntax highlighting
@@ -97,3 +164,25 @@ syntax highlighting
 ---
 
 syntax error highlighting on suspiscous emails and email metadata
+
+---
+
+The email buffers shall be named `vimalaya <email subject>`
+
+---
+
+:Mail close will close all vimalaya buffers
+
+---
+
+:Mail <tab> will complete subcommands
+:Mail cl<tab> will complete to `:Mail close`
+
+---
+
+:Mail shall reuse the same window if the vimalaya main menu buffer is already
+open
+
+---
+
+email chains will be highlighted with the same colors in the mailbox buffer
