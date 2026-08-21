@@ -63,13 +63,6 @@ Maybe Unread emails have specific highlighting
 
 ---
 
-:Mail refresh refreshes the main menu buffer
-:Mail refresh refreshes mailbox buffers
-:Mail refresh is only a subcommand when in a main menu or mailbox buffer
-:Mail ref<tab> completes to `:Mail refresh` only in a main menu or mailbox buffer
-
----
-
 Need to handle drafts in reply, replyall, forward, and new subcommands
 
 ---

@@ -7,6 +7,10 @@ vim.api.nvim_create_user_command('Mail', function(options)
     end
 
     local subcommands = { 'close', 'new' }
+    if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_main_menu')
+        or pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_mailbox') then
+        table.insert(subcommands, 'refresh')
+    end
     if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_message_id') then
         vim.list_extend(subcommands, { 'forward', 'reply', 'replyall' })
     end
@@ -29,6 +33,8 @@ vim.api.nvim_create_user_command('Mail', function(options)
         vimalaya.append_response(options.args)
     elseif options.args == 'send' then
         vimalaya.send_response()
+    elseif options.args == 'refresh' then
+        vimalaya.refresh()
     else
         vimalaya.open_main_menu()
     end
@@ -37,6 +43,10 @@ end, {
     range = true,
     complete = function(arg_lead)
         local subcommands = { 'close' }
+        if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_main_menu')
+            or pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_mailbox') then
+            table.insert(subcommands, 'refresh')
+        end
         if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_message_id') then
             vim.list_extend(subcommands, { 'forward', 'reply', 'replyall' })
         end

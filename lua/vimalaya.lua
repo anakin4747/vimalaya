@@ -48,13 +48,7 @@ function M.open_message(mailbox, id, subject)
     end)
 end
 
-function M.open_mailbox(mailbox)
-    local bufnr = vim.api.nvim_create_buf(true, false)
-    vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya ' .. mailbox .. ' mailbox')
-    vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
-    vim.bo[bufnr].readonly = true
-    vim.api.nvim_set_current_buf(bufnr)
-
+local function load_mailbox(bufnr, mailbox)
     vim.system({ 'himalaya', 'envelope', 'list', '--mailbox', mailbox, '--json', '--page-size', '100' }, {}, function(result)
         vim.schedule(function()
             if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
@@ -78,6 +72,36 @@ function M.open_mailbox(mailbox)
                 local line = vim.fn.line('.')
                 M.open_message(mailbox, envelope_ids[line], envelope_subjects[line])
             end, { buffer = bufnr })
+        end)
+    end)
+end
+
+function M.open_mailbox(mailbox)
+    local bufnr = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya ' .. mailbox .. ' mailbox')
+    vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
+    vim.api.nvim_buf_set_var(bufnr, "vimalaya_mailbox", mailbox)
+    vim.bo[bufnr].readonly = true
+    vim.api.nvim_set_current_buf(bufnr)
+    load_mailbox(bufnr, mailbox)
+end
+
+local function load_main_menu(bufnr)
+    vim.system({ 'himalaya', 'mailbox', 'list', '--json' }, {}, function(result)
+        vim.schedule(function()
+            if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+                return
+            end
+
+            local mailboxes = vim.json.decode(result.stdout)
+            local lines = {}
+            for _, mailbox in ipairs(mailboxes.mailboxes) do
+                table.insert(lines, mailbox.name)
+            end
+
+            vim.bo[bufnr].readonly = false
+            vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+            vim.bo[bufnr].readonly = true
         end)
     end)
 end
@@ -111,23 +135,19 @@ function M.open_main_menu()
     end, { buffer = bufnr })
     vim.api.nvim_set_current_buf(bufnr)
 
-    vim.system({ 'himalaya', 'mailbox', 'list', '--json' }, {}, function(result)
-        vim.schedule(function()
-            if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
-                return
-            end
+    load_main_menu(bufnr)
+end
 
-            local mailboxes = vim.json.decode(result.stdout)
-            local lines = {}
-            for _, mailbox in ipairs(mailboxes.mailboxes) do
-                table.insert(lines, mailbox.name)
-            end
+function M.refresh()
+    if pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_main_menu") then
+        load_main_menu(vim.api.nvim_get_current_buf())
+        return
+    end
 
-            vim.bo[bufnr].readonly = false
-            vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-            vim.bo[bufnr].readonly = true
-        end)
-    end)
+    local has_mailbox, mailbox = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_mailbox")
+    if has_mailbox then
+        load_mailbox(vim.api.nvim_get_current_buf(), mailbox)
+    end
 end
 
 function M.close()

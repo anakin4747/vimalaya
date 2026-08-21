@@ -150,6 +150,28 @@ describe(":Mail", function()
         }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
     end)
 
+    it("refresh refreshes the main menu buffer", function()
+        vim.cmd('Mail')
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'Inbox'
+        end))
+        vim.bo.readonly = false
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'stale' })
+        vim.bo.readonly = true
+
+        vim.cmd('Mail refresh')
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'Inbox'
+        end))
+    end)
+
+    it("offers refresh completion in main menu buffers", function()
+        vim.cmd('Mail')
+
+        assert.same({ 'refresh' }, vim.fn.getcompletion('Mail ref', 'cmdline'))
+    end)
+
     local function open_inbox_mailbox()
         vim.cmd('Mail')
         assert.is_true(vim.wait(1000, function()
@@ -240,6 +262,18 @@ describe(":Mail", function()
         vim.cmd('Mail')
 
         assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'send'))
+    end)
+
+    it("does not offer refresh completion in email buffers", function()
+        open_first_message()
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'refresh'))
+    end)
+
+    it("does not offer refresh completion in new email buffers", function()
+        vim.cmd('Mail new')
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('Mail ', 'cmdline'), 'refresh'))
     end)
 
     it("does not offer send completion in incomplete response sections", function()
@@ -389,6 +423,28 @@ describe(":Mail", function()
             '2026-01-02T00:00:00Z Second example message',
             '2026-01-03T00:00:00Z Third example message',
         }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+    end)
+
+    it("refresh refreshes mailbox buffers", function()
+        open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+        end))
+        vim.bo.readonly = false
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'stale' })
+        vim.bo.readonly = true
+
+        vim.cmd('Mail refresh')
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+        end))
+    end)
+
+    it("offers refresh completion in mailbox buffers", function()
+        open_inbox_mailbox()
+
+        assert.same({ 'refresh' }, vim.fn.getcompletion('Mail ref', 'cmdline'))
     end)
 
     it("opens a message buffer from an envelope", function()
