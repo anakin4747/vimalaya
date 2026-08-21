@@ -11,4 +11,4 @@ test:
 		--headless \
 		--noplugin \
 		-u tests/test_init.lua \
-		-c "PlenaryBustedDirectory tests/ { minimal_init = 'tests/test_init.lua' }"
+		-c "PlenaryBustedDirectory tests/ { minimal_init = 'tests/test_init.lua' }" | grep -v '/tmp/nvim'
