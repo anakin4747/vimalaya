@@ -2,9 +2,9 @@ local M = {}
 
 local main_menu_name = "vimalaya main menu"
 
-function M.open_message(mailbox, id)
+function M.open_message(mailbox, id, subject)
     local bufnr = vim.api.nvim_create_buf(true, false)
-    vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname())
+    vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya ' .. subject)
     vim.api.nvim_set_current_buf(bufnr)
 
     vim.system({ 'himalaya', 'message', 'read', '--mailbox', mailbox, id }, {}, function(result)
@@ -40,16 +40,19 @@ function M.open_mailbox(mailbox)
             local envelopes = vim.json.decode(result.stdout)
             local lines = {}
             local envelope_ids = {}
+            local envelope_subjects = {}
             for _, envelope in ipairs(envelopes.envelopes) do
                 table.insert(lines, envelope.date .. ' ' .. envelope.subject)
                 table.insert(envelope_ids, envelope.id)
+                table.insert(envelope_subjects, envelope.subject)
             end
 
             vim.bo[bufnr].readonly = false
             vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
             vim.bo[bufnr].readonly = true
             vim.keymap.set('n', '<CR>', function()
-                M.open_message(mailbox, envelope_ids[vim.fn.line('.')])
+                local line = vim.fn.line('.')
+                M.open_message(mailbox, envelope_ids[line], envelope_subjects[line])
             end, { buffer = bufnr })
         end)
     end)
