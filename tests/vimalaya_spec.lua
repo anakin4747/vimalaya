@@ -9,10 +9,21 @@ describe(":Mail", function()
     local system
 
     before_each(function()
-        system = vim.fn.system
-        vim.fn.system = function(command)
-            assert.same({ 'himalaya', 'mailbox', 'list', '--json' }, command)
-            return table.concat(vim.fn.readfile('tests/mailboxes.json'), '\n')
+        system = vim.system
+        vim.system = function(command, _, callback)
+            local fixtures = {
+                ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
+            }
+            local fixture = fixtures[table.concat(command, ' ')]
+            assert.is_not_nil(fixture, 'unexpected command: ' .. table.concat(command, ' '))
+
+            vim.schedule(function()
+                callback({
+                    code = 0,
+                    stdout = table.concat(vim.fn.readfile(fixture), '\n'),
+                    stderr = '',
+                })
+            end)
         end
 
         -- delete all buffers
@@ -22,7 +33,7 @@ describe(":Mail", function()
     end)
 
     after_each(function()
-        vim.fn.system = system
+        vim.system = system
     end)
 
     it("does not error", function()
@@ -40,6 +51,9 @@ describe(":Mail", function()
     it("lists mailboxes in the main menu", function()
         vim.cmd('Mail')
 
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'Inbox'
+        end))
         assert.same({
             'Inbox',
             '[Gmail]/All Mail',
