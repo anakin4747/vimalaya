@@ -106,3 +106,12 @@ buffers and going from mailbox buffers to email buffers
 ---
 
 K hover headers in email buffers show the specification for that header
+
+---
+
+Date and time of envelopes are more human readable
+
+---
+
+all the subjects of envelopes are aligned instead of depending on the length of
+the date/time
