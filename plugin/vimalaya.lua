@@ -1,8 +1,8 @@
 vim.api.nvim_create_user_command('Mail', function(options)
     local vimalaya = require('vimalaya')
     if options.range > 0 then
-        local path = table.concat(vim.api.nvim_buf_get_lines(0, options.line1 - 1, options.line2, false), '\n')
-        vimalaya.attach_path(path)
+        local paths = vim.api.nvim_buf_get_lines(0, options.line1 - 1, options.line2, false)
+        vimalaya.attach_paths(paths, options.args == 'new')
         return
     end
 

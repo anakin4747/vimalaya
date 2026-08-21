@@ -176,20 +176,25 @@ function M.append_response(kind)
     last_compose_bufnr = vim.api.nvim_get_current_buf()
 end
 
-function M.attach_path(path)
-    if vim.fn.filereadable(path) ~= 1 then
-        vim.notify(':Mail cannot attach ' .. path .. ': not a file', vim.log.levels.ERROR)
-        return
+function M.attach_paths(paths, new_message)
+    for _, path in ipairs(paths) do
+        if vim.fn.filereadable(path) ~= 1 then
+            vim.notify(':Mail cannot attach ' .. path .. ': not a file', vim.log.levels.ERROR)
+            return
+        end
     end
 
-    if not last_compose_bufnr or not vim.api.nvim_buf_is_valid(last_compose_bufnr) then
+    if new_message or not last_compose_bufnr or not vim.api.nvim_buf_is_valid(last_compose_bufnr) then
         M.open_new_message()
     end
 
     local lines = vim.api.nvim_buf_get_lines(last_compose_bufnr, 0, -1, false)
     for index = #lines, 1, -1 do
         if lines[index] == 'attach: ' then
-            vim.api.nvim_buf_set_lines(last_compose_bufnr, index - 1, index, false, { 'attach: ' .. path })
+            local attachments = vim.tbl_map(function(path)
+                return 'attach: ' .. path
+            end, paths)
+            vim.api.nvim_buf_set_lines(last_compose_bufnr, index - 1, index, false, attachments)
             return
         end
     end

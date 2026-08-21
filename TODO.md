@@ -98,8 +98,3 @@ mispelled or not a valid email address
 ---
 
 b4 integration and git send mail support
-
----
-
-if several filepaths are highlighted and actually files they are all added with
-their own attach: field. One per attachement

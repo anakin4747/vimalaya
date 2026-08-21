@@ -754,6 +754,44 @@ describe(":Mail", function()
         assert.equal(vim.log.levels.ERROR, level)
     end)
 
+    it("attaches multiple ranged file paths as separate fields", function()
+        open_first_message()
+        vim.cmd('Mail reply')
+        local email = vim.api.nvim_get_current_buf()
+        local source = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_buf_set_lines(source, 0, -1, false, { '/bin/bash', '/bin/sh' })
+        vim.api.nvim_set_current_buf(source)
+
+        vim.cmd('1,2Mail')
+
+        local attachments = vim.tbl_filter(function(line)
+            return vim.startswith(line, 'attach:')
+        end, vim.api.nvim_buf_get_lines(email, 0, -1, false))
+        assert.same({ 'attach: /bin/bash', 'attach: /bin/sh' }, attachments)
+    end)
+
+    it("ranged new opens a new email for selected attachments", function()
+        open_first_message()
+        vim.cmd('Mail reply')
+        local previous = vim.api.nvim_get_current_buf()
+        local source = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_buf_set_lines(source, 0, -1, false, { '/bin/bash', '/bin/sh' })
+        vim.api.nvim_set_current_buf(source)
+
+        vim.cmd('1,2Mail new')
+
+        assert.not_equal(source, vim.api.nvim_get_current_buf())
+        assert.not_equal(previous, vim.api.nvim_get_current_buf())
+        assert.same({
+            'to: ',
+            'cc: ',
+            'bcc: ',
+            'subject: ',
+            'attach: /bin/bash',
+            'attach: /bin/sh',
+        }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+    end)
+
     local function assert_send_removes_response(kind)
         open_first_message()
         local original = vim.api.nvim_buf_get_lines(0, 0, -1, false)
