@@ -23,41 +23,6 @@ the cursor while pending
 
 ---
 
-:Mail reply appends Reply header to email buffers
-:Mail replyall appends Reply All header to email buffers
-:Mail forward appends Forward header to email buffers
-
-These commands while in an email buffer will append the following to the email buffer:
-
-```
---- Reply ---
-To: <original sender>
-Cc: <original cc>
-Subject: Re: <original subject>
-
-<Response>
-```
-or
-```
---- Reply All ---
-To: <original senders>
-Cc: <original cc>
-Subject: Re: <original subject>
-
-<Response>
-```
-or
-```
---- Forward ---
-To: <original senders>
-Cc: <original cc>
-Subject: Fwd: <original subject>
-
-<Response>
-```
-
----
-
 Then :Mail send will send the response email to the appropriate recipients and
 CCs.
 

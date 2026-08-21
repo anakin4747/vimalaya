@@ -130,6 +130,18 @@ describe(":Mail", function()
         return main_menu
     end
 
+    local function open_first_message()
+        open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+        end))
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'From: Example Sender <sender@example.test>'
+        end))
+        vim.api.nvim_buf_set_lines(0, 2, 2, false, { 'Cc: Example Copy <copy@example.test>' })
+    end
+
     it("opens a mailbox buffer", function()
         local main_menu = open_inbox_mailbox()
 
@@ -309,5 +321,50 @@ describe(":Mail", function()
         assert.is_false(vim.api.nvim_buf_is_valid(mailbox))
         assert.is_false(vim.api.nvim_buf_is_valid(message))
         assert.is_true(vim.api.nvim_buf_is_valid(unrelated))
+    end)
+
+    it("reply appends a Reply header to email buffers", function()
+        open_first_message()
+
+        vim.cmd('Mail reply')
+
+        assert.same({
+            '--- Reply ---',
+            'To: Example Sender <sender@example.test>',
+            'Cc: Example Copy <copy@example.test>',
+            'Subject: Re: First example message',
+            '',
+            '<Response>',
+        }, vim.api.nvim_buf_get_lines(0, -7, -1, false))
+    end)
+
+    it("replyall appends a Reply All header to email buffers", function()
+        open_first_message()
+
+        vim.cmd('Mail replyall')
+
+        assert.same({
+            '--- Reply All ---',
+            'To: Example Sender <sender@example.test>',
+            'Cc: Example Copy <copy@example.test>',
+            'Subject: Re: First example message',
+            '',
+            '<Response>',
+        }, vim.api.nvim_buf_get_lines(0, -7, -1, false))
+    end)
+
+    it("forward appends a Forward header to email buffers", function()
+        open_first_message()
+
+        vim.cmd('Mail forward')
+
+        assert.same({
+            '--- Forward ---',
+            'To: Example Sender <sender@example.test>',
+            'Cc: Example Copy <copy@example.test>',
+            'Subject: Fwd: First example message',
+            '',
+            '<Response>',
+        }, vim.api.nvim_buf_get_lines(0, -7, -1, false))
     end)
 end)

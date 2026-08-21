@@ -122,4 +122,37 @@ function M.close()
     end
 end
 
+function M.append_response(kind)
+    if not pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_message_id") then
+        return
+    end
+
+    local headers = {}
+    for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+        if line == '' then
+            break
+        end
+
+        local name, value = line:match('^([^:]+):%s*(.*)$')
+        if name then
+            headers[name:lower()] = value
+        end
+    end
+
+    local response = {
+        reply = { title = 'Reply', subject = 'Re: ' },
+        replyall = { title = 'Reply All', subject = 'Re: ' },
+        forward = { title = 'Forward', subject = 'Fwd: ' },
+    }
+    local action = response[kind]
+    vim.api.nvim_buf_set_lines(0, -1, -1, false, {
+        '--- ' .. action.title .. ' ---',
+        'To: ' .. (headers.from or ''),
+        'Cc: ' .. (headers.cc or ''),
+        'Subject: ' .. action.subject .. (headers.subject or ''),
+        '',
+        '<Response>',
+    })
+end
+
 return M
