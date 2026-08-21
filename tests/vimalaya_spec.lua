@@ -713,6 +713,30 @@ describe(":Mail", function()
         }, command)
     end)
 
+    it("attaches a ranged file path to the last compose buffer", function()
+        open_first_message()
+        vim.cmd('Mail reply')
+        local email = vim.api.nvim_get_current_buf()
+        local source = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_buf_set_lines(source, 0, -1, false, { '/bin/bash' })
+        vim.api.nvim_set_current_buf(source)
+
+        vim.cmd('1,1Mail')
+
+        assert.is_true(vim.tbl_contains(vim.api.nvim_buf_get_lines(email, 0, -1, false), 'attach: /bin/bash'))
+    end)
+
+    it("opens a new email when attaching without a compose buffer", function()
+        local source = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_buf_set_lines(source, 0, -1, false, { '/bin/bash' })
+        vim.api.nvim_set_current_buf(source)
+
+        vim.cmd('1,1Mail')
+
+        assert.not_equal(source, vim.api.nvim_get_current_buf())
+        assert.is_true(vim.tbl_contains(vim.api.nvim_buf_get_lines(0, 0, -1, false), 'attach: /bin/bash'))
+    end)
+
     local function assert_send_removes_response(kind)
         open_first_message()
         local original = vim.api.nvim_buf_get_lines(0, 0, -1, false)

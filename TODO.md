@@ -101,20 +101,6 @@ b4 integration and git send mail support
 
 ---
 
-highlighting a file path and :'<,'>Mail will attach that file to the last email
-buffer that was written to if none it should be attached to a new email buffer
-as a header field like:
-
-```
---- Reply ---
-to: <original sender>
-cc: <original cc>
-subject: Re: <original subject>
-attach: <file path>
-```
-
----
-
 highlighting a file path and :'<,'>Mail will fail if the highlighted text is
 not a valid file
 

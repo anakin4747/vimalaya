@@ -1,6 +1,7 @@
 local M = {}
 
 local main_menu_name = "vimalaya main menu"
+local last_compose_bufnr
 
 function M.open_new_message()
     local bufnr = vim.api.nvim_create_buf(true, false)
@@ -8,6 +9,7 @@ function M.open_new_message()
     vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_new_message", true)
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'to: ', 'cc: ', 'bcc: ', 'subject: ', 'attach: ' })
+    last_compose_bufnr = bufnr
     vim.api.nvim_set_current_buf(bufnr)
 end
 
@@ -171,6 +173,21 @@ function M.append_response(kind)
         'attach: ',
         '',
     })
+    last_compose_bufnr = vim.api.nvim_get_current_buf()
+end
+
+function M.attach_path(path)
+    if not last_compose_bufnr or not vim.api.nvim_buf_is_valid(last_compose_bufnr) then
+        M.open_new_message()
+    end
+
+    local lines = vim.api.nvim_buf_get_lines(last_compose_bufnr, 0, -1, false)
+    for index = #lines, 1, -1 do
+        if lines[index] == 'attach: ' then
+            vim.api.nvim_buf_set_lines(last_compose_bufnr, index - 1, index, false, { 'attach: ' .. path })
+            return
+        end
+    end
 end
 
 function M.send_response()

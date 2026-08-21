@@ -1,5 +1,11 @@
 vim.api.nvim_create_user_command('Mail', function(options)
     local vimalaya = require('vimalaya')
+    if options.range > 0 then
+        local path = table.concat(vim.api.nvim_buf_get_lines(0, options.line1 - 1, options.line2, false), '\n')
+        vimalaya.attach_path(path)
+        return
+    end
+
     local subcommands = { 'close', 'new' }
     if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_message_id') then
         vim.list_extend(subcommands, { 'forward', 'reply', 'replyall' })
@@ -28,6 +34,7 @@ vim.api.nvim_create_user_command('Mail', function(options)
     end
 end, {
     nargs = '?',
+    range = true,
     complete = function(arg_lead)
         local subcommands = { 'close' }
         if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_message_id') then
