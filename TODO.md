@@ -56,6 +56,8 @@ Subject: Fwd: <original subject>
 <Response>
 ```
 
+---
+
 Then :Mail send will send the response email to the appropriate recipients and
 CCs.
 
@@ -174,3 +176,7 @@ Maybe Unread emails have specific highlighting
 ---
 
 :Mail subcommands accept shorthands like ex-commands
+
+---
+
+Need to handle drafts in reply, replyall, forward, and new subcommands
