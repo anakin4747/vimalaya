@@ -173,6 +173,13 @@ function M.append_response(kind)
 end
 
 function M.send_response()
+    local is_message = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_message_id")
+    local is_new_message = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_new_message")
+    if not is_message and not is_new_message then
+        vim.notify(':Mail send is only available in email buffers', vim.log.levels.ERROR)
+        return
+    end
+
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
     local response_start
     local response_markers = {

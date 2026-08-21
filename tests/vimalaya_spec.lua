@@ -324,6 +324,12 @@ describe(":Mail", function()
         assert.equal(':Mail forward is only available in email buffers', response_error('forward'))
     end)
 
+    it("rejects send in mailbox buffers with a friendly error", function()
+        open_inbox_mailbox()
+
+        assert.equal(':Mail send is only available in email buffers', response_error('send'))
+    end)
+
     it("rejects reply in main menu buffers with a friendly error", function()
         vim.cmd('Mail')
 
@@ -340,6 +346,12 @@ describe(":Mail", function()
         vim.cmd('Mail')
 
         assert.equal(':Mail forward is only available in email buffers', response_error('forward'))
+    end)
+
+    it("rejects send in main menu buffers with a friendly error", function()
+        vim.cmd('Mail')
+
+        assert.equal(':Mail send is only available in email buffers', response_error('send'))
     end)
 
     it("opens a mailbox buffer", function()
