@@ -7,7 +7,7 @@ function M.open_new_message()
     vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya new email')
     vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_new_message", true)
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'to: ', 'cc: ', 'bcc: ', 'subject: ' })
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'to: ', 'cc: ', 'bcc: ', 'subject: ', 'attach: ' })
     vim.api.nvim_set_current_buf(bufnr)
 end
 
@@ -168,6 +168,7 @@ function M.append_response(kind)
         'cc: ' .. (headers.cc or ''),
         'bcc: ',
         'subject: ' .. action.subject .. (headers.subject or ''),
+        'attach: ',
         '',
     })
 end
@@ -216,6 +217,9 @@ function M.send_response()
         if headers[name] and headers[name] ~= '' then
             vim.list_extend(command, { '--' .. name, headers[name] })
         end
+    end
+    if headers.attach and headers.attach ~= '' then
+        vim.list_extend(command, { '--attach', headers.attach })
     end
     vim.list_extend(command, {
         '--body', table.concat(vim.list_slice(lines, body_start or (#lines + 1)), '\n'), '--send',

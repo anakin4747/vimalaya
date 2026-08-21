@@ -126,15 +126,3 @@ their own attach: field. One per attachement
 ---
 
 Support arbitrary number of to:s, cc:s, bcc:s, and attach:s in email buffers
-
----
-
-Add attach: fields to add filepaths to attach files to
-
-```
---- Reply ---
-to: <original sender>
-cc: <original cc>
-subject: Re: <original subject>
-attach: /bin/bash
-```

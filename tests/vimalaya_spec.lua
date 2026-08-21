@@ -114,7 +114,7 @@ describe(":Mail", function()
     it("new opens an email buffer with recipient and subject fields", function()
         vim.cmd('Mail new')
 
-        assert.same({ 'to: ', 'cc: ', 'bcc: ', 'subject: ' }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+        assert.same({ 'to: ', 'cc: ', 'bcc: ', 'subject: ', 'attach: ' }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
     end)
 
     it("names the main menu buffer", function()
@@ -548,8 +548,9 @@ describe(":Mail", function()
             'cc: Example Copy <copy@example.test>',
             'bcc: ',
             'subject: Re: First example message',
+            'attach: ',
             '',
-        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -10, -1, false))
     end)
 
     it("replyall appends a Reply All header to email buffers", function()
@@ -565,8 +566,9 @@ describe(":Mail", function()
             'cc: Example Copy <copy@example.test>',
             'bcc: ',
             'subject: Re: First example message',
+            'attach: ',
             '',
-        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -10, -1, false))
     end)
 
     it("forward appends a Forward header to email buffers", function()
@@ -582,8 +584,9 @@ describe(":Mail", function()
             'cc: Example Copy <copy@example.test>',
             'bcc: ',
             'subject: Fwd: First example message',
+            'attach: ',
             '',
-        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -10, -1, false))
     end)
 
     it("send sends responses to their To, Cc, and Bcc recipients", function()
@@ -634,6 +637,27 @@ describe(":Mail", function()
             return message ~= nil
         end))
         assert.equal('Himalaya stdout\nHimalaya stderr\n', message)
+    end)
+
+    it("send attaches the file from the attach field", function()
+        local command
+        open_first_message()
+        vim.cmd('Mail reply')
+        vim.api.nvim_buf_set_lines(0, -2, -2, false, { 'attach: /bin/bash' })
+        vim.system = function(args, _, callback)
+            command = args
+            vim.schedule(function()
+                callback({ code = 0, stdout = 'Message successfully sent\n', stderr = '' })
+            end)
+        end
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return command ~= nil
+        end))
+        assert.is_true(vim.tbl_contains(command, '--attach'))
+        assert.is_true(vim.tbl_contains(command, '/bin/bash'))
     end)
 
     local function assert_send_removes_response(kind)
