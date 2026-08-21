@@ -801,6 +801,19 @@ describe(":Mail", function()
         ))
     end)
 
+    it("attaches a path selected from a terminal after opening a new email", function()
+        vim.cmd('Mail new')
+        local email = vim.api.nvim_get_current_buf()
+        vim.cmd("terminal printf '/bin/bash\\n'")
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '/bin/bash'
+        end))
+
+        vim.cmd('1,1Mail')
+
+        assert.is_true(vim.tbl_contains(vim.api.nvim_buf_get_lines(email, 0, -1, false), 'attach: /bin/bash'))
+    end)
+
     it("opens a new email when attaching without a compose buffer", function()
         local source = vim.api.nvim_create_buf(true, false)
         vim.api.nvim_buf_set_lines(source, 0, -1, false, { '/bin/bash' })
