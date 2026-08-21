@@ -1,0 +1,8 @@
+[project]
+org='anakin4747'
+name='vimalaya'
+
+[build]
+command=""
+
+# vi: ft=ini
