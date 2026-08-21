@@ -19,6 +19,12 @@ function M.open_main_menu()
     local bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(bufnr, main_menu_name)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_main_menu", true)
+    local mailboxes = vim.fn.json_decode(vim.fn.system({ 'himalaya', 'mailbox', 'list', '--json' }))
+    local lines = {}
+    for _, mailbox in ipairs(mailboxes.mailboxes) do
+        table.insert(lines, mailbox.name)
+    end
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
     vim.api.nvim_set_current_buf(bufnr)
 end
 
