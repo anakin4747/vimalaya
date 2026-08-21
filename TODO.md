@@ -79,4 +79,7 @@ the email the user must:
 1. delete that Email's buffer
 2. reopen the Email from a mailbox buffer
 
+---
 
+How will the user know that async waiting is happening? Rotate the colors of
+the cursor while pending
