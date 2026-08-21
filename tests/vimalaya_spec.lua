@@ -98,6 +98,7 @@ describe(":Mail", function()
             vim.api.nvim_buf_get_name(0),
             vim.fn.fnamemodify(vim.fn.tempname(), ':h') .. '/'
         ))
+        assert.is_true(vim.endswith(vim.api.nvim_buf_get_name(0), ' vimalaya Inbox mailbox'))
         assert.is_true(vim.bo.readonly)
         assert.is_true(vim.wait(1000, function()
             return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'First example message'
