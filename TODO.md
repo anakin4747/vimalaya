@@ -118,3 +118,30 @@ Handle unlocking himalaya to not freeze vimalaya
 
 ---
 
+opening an email lists the available attachements at the bottom of the email
+like this:
+
+```
+attachments:
+  filename: bkn6a89018582d542-76714289.ics
+    mime: text/calendar
+    size: 842
+  filename: bkn2a89018580d539-76714292.ics
+    mime: text/calendar
+    size: 839
+```
+
+Hitting enter on an attachment downloads it and once it is downloaded the
+the email buffer is updated to show the path to the downloaded file like this:
+
+```
+attachments:
+  filename: bkn6a89018582d542-76714289.ics /path/to/downloaded/bkn6a89018582d542-76714289.ics
+    mime: text/calendar
+    size: 842
+  filename: bkn2a89018580d539-76714292.ics /path/to/downloaded/bkn2a89018580d539-76714292.ics
+    mime: text/calendar
+    size: 839
+```
+
+---
