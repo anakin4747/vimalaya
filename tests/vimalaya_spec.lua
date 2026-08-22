@@ -453,6 +453,41 @@ describe(":Mail", function()
         assert.same({ 'refresh' }, vim.fn.getcompletion('Mail ref', 'cmdline'))
     end)
 
+    it("reuses an active mailbox buffer from the main menu", function()
+        local main_menu = open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+        end))
+        local expected = vim.api.nvim_get_current_buf()
+        local count = #vim.api.nvim_list_bufs()
+
+        vim.api.nvim_set_current_buf(main_menu)
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.equal(expected, vim.api.nvim_get_current_buf())
+        assert.equal(count, #vim.api.nvim_list_bufs())
+    end)
+
+    it("reuses a hidden mailbox buffer from the main menu", function()
+        open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+        end))
+        local expected = vim.api.nvim_get_current_buf()
+
+        vim.cmd('enew')
+        vim.cmd('Mail')
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'Inbox'
+        end))
+        local count = #vim.api.nvim_list_bufs()
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.equal(expected, vim.api.nvim_get_current_buf())
+        assert.equal(count, #vim.api.nvim_list_bufs())
+    end)
+
     it("opens a message buffer from an envelope", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()

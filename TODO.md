@@ -118,11 +118,3 @@ Handle unlocking himalaya to not freeze vimalaya
 
 ---
 
-:Mail reuses active mailbox buffers
-:Mail reuses hidden mailbox buffers
-
-If a mailbox buffer is already open, pressing enter on that mailbox from the
-main menu should just switch to that buffer instead creating a new one
-
----
-
