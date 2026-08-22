@@ -40,7 +40,7 @@ function M.open_new_message()
     vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya new email')
     vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_new_message", true)
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'to: ', 'cc: ', 'bcc: ', 'subject: ', 'attach: ' })
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'to: ', 'cc: ', 'bcc: ', 'subject: ' })
     last_compose_bufnr = bufnr
     vim.api.nvim_set_current_buf(bufnr)
 end
@@ -222,7 +222,6 @@ function M.append_response(kind)
         'cc: ' .. (headers.cc or ''),
         'bcc: ',
         'subject: ' .. action.subject .. (headers.subject or ''),
-        'attach: ',
         '',
     })
     last_compose_bufnr = vim.api.nvim_get_current_buf()
@@ -245,21 +244,39 @@ function M.attach_paths(paths, new_message)
     end
 
     local lines = vim.api.nvim_buf_get_lines(last_compose_bufnr, 0, -1, false)
+    local attachments = vim.tbl_map(function(path)
+        return 'attach: ' .. path
+    end, paths)
     for index = #lines, 1, -1 do
         if lines[index] == 'attach: ' then
-            local attachments = vim.tbl_map(function(path)
-                return 'attach: ' .. path
-            end, paths)
             vim.api.nvim_buf_set_lines(last_compose_bufnr, index - 1, index, false, attachments)
             return
         elseif vim.startswith(lines[index], 'attach: ') then
-            local attachments = vim.tbl_map(function(path)
-                return 'attach: ' .. path
-            end, paths)
             vim.api.nvim_buf_set_lines(last_compose_bufnr, index, index, false, attachments)
             return
         end
     end
+
+    local compose_start = 1
+    local response_markers = {
+        ['--- Reply ---'] = true,
+        ['--- Reply All ---'] = true,
+        ['--- Forward ---'] = true,
+    }
+    for index, line in ipairs(lines) do
+        if response_markers[line] then
+            compose_start = index + 1
+        end
+    end
+
+    local insert_at = #lines
+    for index = compose_start, #lines do
+        if lines[index] == '' then
+            insert_at = index - 1
+            break
+        end
+    end
+    vim.api.nvim_buf_set_lines(last_compose_bufnr, insert_at, insert_at, false, attachments)
 end
 
 function M.send_response()

@@ -120,7 +120,7 @@ describe(":Mail", function()
     it("new opens an email buffer with recipient and subject fields", function()
         vim.cmd('Mail new')
 
-        assert.same({ 'to: ', 'cc: ', 'bcc: ', 'subject: ', 'attach: ' }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+        assert.same({ 'to: ', 'cc: ', 'bcc: ', 'subject: ' }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
     end)
 
     it("names the main menu buffer", function()
@@ -610,9 +610,8 @@ describe(":Mail", function()
             'cc: Example Copy <copy@example.test>',
             'bcc: ',
             'subject: Re: First example message',
-            'attach: ',
             '',
-        }, vim.api.nvim_buf_get_lines(0, -10, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
     end)
 
     it("replyall appends a Reply All header to email buffers", function()
@@ -628,9 +627,8 @@ describe(":Mail", function()
             'cc: Example Copy <copy@example.test>',
             'bcc: ',
             'subject: Re: First example message',
-            'attach: ',
             '',
-        }, vim.api.nvim_buf_get_lines(0, -10, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
     end)
 
     it("forward appends a Forward header to email buffers", function()
@@ -646,9 +644,8 @@ describe(":Mail", function()
             'cc: Example Copy <copy@example.test>',
             'bcc: ',
             'subject: Fwd: First example message',
-            'attach: ',
             '',
-        }, vim.api.nvim_buf_get_lines(0, -10, -1, false))
+        }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
     end)
 
     it("send sends responses to their To, Cc, and Bcc recipients", function()
