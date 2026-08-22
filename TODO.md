@@ -96,3 +96,33 @@ b4 integration and git send mail support
 
 the header info of an email is folded by default to have that easily accessible
 but not the main focus
+
+---
+
+Handle unlocking himalaya to not freeze vimalaya
+
+---
+
+:Mail save in a new email saves a draft email with himalaya message compose ... --save
+:Mail save in a reply email saves a draft email with himalaya message reply ... --save
+:Mail save in a replyall email saves a draft email with himalaya message reply ... --save
+:Mail save in a replyall email correctly saves multiple to, cc, and, bcc fields
+:Mail save in a forward email saves a draft email with himalaya message forward ... --save
+
+ - For new: build himalaya message compose ... --save <drafts_mailbox>.
+ - For reply / replyall: build himalaya message reply <id> --mailbox <mailbox> ... --save <drafts_mailbox> so Himalaya keeps
+   threading headers (In-Reply-To, References).
+ - For forward: build himalaya message forward <id> --mailbox <mailbox> ... --save <drafts_mailbox>.
+ - For replyall, pass explicit repeated --to/--cc gathered from buffer fields (your parser already supports repeated fields
+   in lua/vimalaya.lua:307).
+
+---
+
+:Mail reuses active mailbox buffers
+:Mail reuses hidden mailbox buffers
+
+If a mailbox buffer is already open, pressing enter on that mailbox from the
+main menu should just switch to that buffer instead creating a new one
+
+---
+
