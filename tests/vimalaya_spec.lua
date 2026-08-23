@@ -781,11 +781,13 @@ describe(":Mail", function()
         }, command)
     end)
 
-    it("send reports Himalaya stdout and stderr when sending fails", function()
+    it("send reports the failed himalaya command, stdout, and stderr when sending fails", function()
         local message
+        local command
         open_first_message()
         vim.cmd('Mail reply')
-        vim.system = function(_, _, callback)
+        vim.system = function(args, _, callback)
+            command = args
             vim.schedule(function()
                 callback({
                     code = 1,
@@ -803,7 +805,10 @@ describe(":Mail", function()
         assert.is_true(vim.wait(1000, function()
             return message ~= nil
         end))
-        assert.equal('Himalaya stdout\nHimalaya stderr\n', message)
+        assert.equal(
+            table.concat(command, ' ') .. '\nHimalaya stdout\nHimalaya stderr\n',
+            message
+        )
     end)
 
     it("send attaches the file from the attach field", function()

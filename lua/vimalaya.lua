@@ -365,7 +365,7 @@ function M.send_response()
                 end
                 vim.notify(vim.trim(result.stdout))
             else
-                vim.notify(result.stdout .. result.stderr, vim.log.levels.ERROR)
+                vim.notify(table.concat(command, ' ') .. '\n' .. result.stdout .. result.stderr, vim.log.levels.ERROR)
             end
         end)
     end)
