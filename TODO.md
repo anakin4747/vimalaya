@@ -145,3 +145,13 @@ attachments:
 ```
 
 ---
+
+```
+Error: SMTP RCPT TO failed: rejected 555 5.5.2 Syntax error, cannot decode response. For more information, go to
+
+Suggestions:
+ - Run with --log-level to enable more verbose logs
+
+E492: Not an editor command: Mess
+```
+
