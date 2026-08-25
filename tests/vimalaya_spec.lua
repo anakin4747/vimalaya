@@ -1255,6 +1255,96 @@ describe(":Mail", function()
         assert.same({ 'attach: /bin/bash', 'attach: /bin/sh' }, attachments)
     end)
 
+    it("attaches a ranged directory as a tar.gz archive", function()
+        vim.cmd('Mail new')
+        local email = vim.api.nvim_get_current_buf()
+        local directory = download_dir .. '/payload'
+        vim.fn.mkdir(directory, 'p')
+        local source = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_buf_set_lines(source, 0, -1, false, { directory })
+        vim.api.nvim_set_current_buf(source)
+        himalaya_mocks['tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'] = function()
+            return { code = 0, stdout = '', stderr = '' }
+        end
+
+        vim.cmd('1,1Mail')
+
+        assert.is_true(vim.tbl_contains(
+            vim.api.nvim_buf_get_lines(email, 0, -1, false),
+            'attach: ' .. directory .. '.tar.gz'
+        ))
+    end)
+
+    it("reports that a ranged directory is compressing with an info diagnostic", function()
+        vim.cmd('Mail new')
+        local email = vim.api.nvim_get_current_buf()
+        local directory = download_dir .. '/payload'
+        vim.fn.mkdir(directory, 'p')
+        local source = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_buf_set_lines(source, 0, -1, false, { directory })
+        vim.api.nvim_set_current_buf(source)
+        himalaya_mocks['tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'] = function()
+            return { code = 0, stdout = '', stderr = '' }
+        end
+
+        vim.cmd('1,1Mail')
+
+        local infos = vim.diagnostic.get(email, { severity = vim.diagnostic.severity.INFO })
+        assert.equal(1, #infos)
+        assert.equal('compressing directory into archive: ' .. directory .. '.tar.gz', infos[1].message)
+    end)
+
+    it("attaches interweaved files and directories in a ranged selection", function()
+        vim.cmd('Mail new')
+        local email = vim.api.nvim_get_current_buf()
+        local directory = download_dir .. '/payload'
+        vim.fn.mkdir(directory, 'p')
+        local source = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_buf_set_lines(source, 0, -1, false, { '/bin/bash', directory, '/bin/sh' })
+        vim.api.nvim_set_current_buf(source)
+        himalaya_mocks['tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'] = function()
+            return { code = 0, stdout = '', stderr = '' }
+        end
+
+        vim.cmd('1,3Mail')
+
+        local attachments = vim.tbl_filter(function(line)
+            return vim.startswith(line, 'attach:')
+        end, vim.api.nvim_buf_get_lines(email, 0, -1, false))
+        assert.same({
+            'attach: /bin/bash',
+            'attach: ' .. directory .. '.tar.gz',
+            'attach: /bin/sh',
+        }, attachments)
+    end)
+
+    it("reports the full command when compressing a directory fails", function()
+        local message
+        local level
+        vim.cmd('Mail new')
+        local directory = download_dir .. '/payload'
+        vim.fn.mkdir(directory, 'p')
+        local source = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_buf_set_lines(source, 0, -1, false, { directory })
+        vim.api.nvim_set_current_buf(source)
+        local command = 'tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'
+        himalaya_mocks[command] = function()
+            return { code = 127, stdout = '', stderr = 'tar: command not found\n' }
+        end
+        vim.notify = function(notification, notification_level)
+            message = notification
+            level = notification_level
+        end
+
+        vim.cmd('1,1Mail')
+
+        assert.is_true(vim.wait(1000, function()
+            return message ~= nil
+        end))
+        assert.equal(command .. '\ntar: command not found\n', message)
+        assert.equal(vim.log.levels.ERROR, level)
+    end)
+
     it("ranged new opens a new email for selected attachments", function()
         open_first_message()
         vim.cmd('Mail reply')

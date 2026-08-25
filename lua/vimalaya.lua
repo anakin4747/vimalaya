@@ -2,6 +2,7 @@ local M = {}
 
 local main_menu_name = "vimalaya main menu"
 local attachment_diagnostics_namespace = vim.api.nvim_create_namespace('vimalaya_attachments')
+local compressing_archives = {}
 local last_compose_bufnr
 local enable_attachment_diagnostics
 local response_actions = {
@@ -481,13 +482,36 @@ function M.append_response_form(kind)
     enable_attachment_diagnostics(last_compose_bufnr)
 end
 
+local function compress_directory(directory)
+    local parent = vim.fn.fnamemodify(directory, ':h')
+    local name = vim.fn.fnamemodify(directory, ':t')
+    local archive = directory .. '.tar.gz'
+    local command = { 'tar', '-czf', archive, '-C', parent, name }
+    compressing_archives[archive] = true
+    vim.system(command, {}, function(result)
+        vim.schedule(function()
+            compressing_archives[archive] = nil
+            if result.code ~= 0 then
+                vim.notify(
+                    table.concat(command, ' ') .. '\n' .. (result.stdout or '') .. (result.stderr or ''),
+                    vim.log.levels.ERROR
+                )
+            end
+            if last_compose_bufnr and vim.api.nvim_buf_is_valid(last_compose_bufnr) then
+                M.refresh_attachment_diagnostics(last_compose_bufnr)
+            end
+        end)
+    end)
+    return archive
+end
+
 function M.attach_paths_to_message(paths, new_message)
     paths = vim.tbl_map(function(path)
-        return vim.fn.fnamemodify(path, ':p')
+        return (vim.fn.fnamemodify(path, ':p'):gsub('/$', ''))
     end, paths)
 
     for _, path in ipairs(paths) do
-        if vim.fn.filereadable(path) ~= 1 then
+        if vim.fn.filereadable(path) ~= 1 and vim.fn.isdirectory(path) ~= 1 then
             vim.notify(':Mail cannot attach ' .. path .. ': not a file', vim.log.levels.ERROR)
             return
         end
@@ -499,14 +523,23 @@ function M.attach_paths_to_message(paths, new_message)
 
     local lines = vim.api.nvim_buf_get_lines(last_compose_bufnr, 0, -1, false)
     local attachments = vim.tbl_map(function(path)
+        if vim.fn.isdirectory(path) == 1 then
+            return 'attach: ' .. compress_directory(path)
+        end
         return 'attach: ' .. path
     end, paths)
+
+    local function insert_attachments(start, stop)
+        vim.api.nvim_buf_set_lines(last_compose_bufnr, start, stop, false, attachments)
+        M.refresh_attachment_diagnostics(last_compose_bufnr)
+    end
+
     for index = #lines, 1, -1 do
         if lines[index] == 'attach: ' then
-            vim.api.nvim_buf_set_lines(last_compose_bufnr, index - 1, index, false, attachments)
+            insert_attachments(index - 1, index)
             return
         elseif vim.startswith(lines[index], 'attach: ') then
-            vim.api.nvim_buf_set_lines(last_compose_bufnr, index, index, false, attachments)
+            insert_attachments(index, index)
             return
         end
     end
@@ -520,7 +553,7 @@ function M.attach_paths_to_message(paths, new_message)
             break
         end
     end
-    vim.api.nvim_buf_set_lines(last_compose_bufnr, insert_at, insert_at, false, attachments)
+    insert_attachments(insert_at, insert_at)
 end
 
 local function process_message_send_result(send, result)
@@ -645,6 +678,14 @@ function M.refresh_attachment_diagnostics(bufnr)
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     for index, line in ipairs(lines) do
         local path = line:match('^attach:%s*(.+)$')
+        if path and compressing_archives[path] then
+            table.insert(diagnostics, {
+                lnum = index - 1,
+                col = 0,
+                severity = vim.diagnostic.severity.INFO,
+                message = 'compressing directory into archive: ' .. path,
+            })
+        end
         if path and vim.fn.filereadable(vim.fn.fnamemodify(path, ':p')) ~= 1 then
             table.insert(diagnostics, {
                 lnum = index - 1,

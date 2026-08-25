@@ -129,18 +129,28 @@ E492: Not an editor command: Mess
 
 start with a new email or reply with the following:
 
-    attach: /path/to/file
+    attach: /path/to/directory
 
 Then append:
 
-    attach: /path/to/file.tar.gz
+    attach: /path/to/directory.tar.gz
 
 Then write the buffer with `:w`
 
-Now vimalaya should make the compressed archive.
+Now vimalaya should make the compressed archive. It should update the
+diagnostics to be an info diagnostic (so that makes two diagnostics including the
+error diagnostics since the file doesn't exist) that vimalaya is compressing
+the file.
 
 Once the archive is created vimalaya should have a way to refresh the
-highlighting of the buffer
+diagnostics of the buffer
+
+---
+
+any compression format should be supported. If the command to compress fails
+due to the command not existing that needs to be shown to the user in the same
+fashion as all the other warnings. It should show the entire command that
+failed.
 
 ---
 
