@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+nvim --server "$NVIM" --remote-expr 'execute("split +terminal")' > /dev/null
+nvim --server "$NVIM" --remote-expr \
+  'get(nvim_get_chan_info(b:terminal_job_id), "pty", "")' 2>&1 | grep -aoE '/dev/pts/[0-9]+'
