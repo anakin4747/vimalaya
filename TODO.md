@@ -160,3 +160,11 @@ buffer???
 ---
 
 At main menu allow selecting the accounts first
+
+---
+
+himalaya message compose --from example@email.com --to example@email.com --subject vimalaya --attach /home/kin/src/vimalaya.tar.gz --body  --send
+Error: received corrupt message of type InvalidContentType
+
+Suggestions:
+ - Run with --log-level to enable more verbose logs
