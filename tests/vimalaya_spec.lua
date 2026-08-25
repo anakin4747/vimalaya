@@ -1118,6 +1118,41 @@ describe(":Mail", function()
         }, command)
     end)
 
+    it("send strips display names from recipients before passing them to himalaya", function()
+        local command
+        open_first_message()
+        vim.cmd('Mail reply')
+        vim.api.nvim_buf_set_lines(0, -7, -1, false, {
+            '--- Reply ---',
+            'to: Example Sender <sender@example.test>',
+            'cc: Example Copy <copy@example.test>',
+            'bcc: Example Blind Copy <blind-copy@example.test>',
+            'subject: Re: First example message',
+            '',
+            'Thanks.',
+        })
+        himalaya_mocks['himalaya message compose'] = function(args)
+            command = args
+            return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
+        end
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return command ~= nil
+        end))
+        assert.same({
+            'himalaya', 'message', 'compose',
+            '--from', 'example@gmail.com',
+            '--to', 'sender@example.test',
+            '--cc', 'copy@example.test',
+            '--bcc', 'blind-copy@example.test',
+            '--subject', 'Re: First example message',
+            '--body', 'Thanks.',
+            '--send',
+        }, command)
+    end)
+
     it("attaches a ranged file path to the last compose buffer", function()
         open_first_message()
         vim.cmd('Mail reply')

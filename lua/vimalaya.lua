@@ -551,6 +551,10 @@ local function add_message_header(headers, name, value)
     return headers
 end
 
+local function extract_email_address(value)
+    return value:match('<%s*(.-)%s*>') or value
+end
+
 function M.send_composed_message()
     local bufnr = vim.api.nvim_get_current_buf()
     local is_message = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_message_id")
@@ -585,7 +589,7 @@ function M.send_composed_message()
     end
     for _, name in ipairs({ 'to', 'cc', 'bcc' }) do
         for _, value in ipairs(headers[name]) do
-            vim.list_extend(command, { '--' .. name, value })
+            vim.list_extend(command, { '--' .. name, extract_email_address(value) })
         end
     end
     if headers.subject and headers.subject ~= '' then
