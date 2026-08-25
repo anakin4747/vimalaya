@@ -97,6 +97,8 @@ b4 integration and git send mail support
 the header info of an email is folded by default to have that easily accessible
 but not the main focus
 
+maybe insert {{{ and set foldmethod=marker to fold the header info
+
 ---
 
 Handle unlocking himalaya to not freeze vimalaya
@@ -127,23 +129,23 @@ E492: Not an editor command: Mess
 
 ---
 
-start with a new email or reply with the following:
-
-    attach: /path/to/directory
-
-Then append:
-
-    attach: /path/to/directory.tar.gz
-
-Then write the buffer with `:w`
-
-Now vimalaya should make the compressed archive. It should update the
-diagnostics to be an info diagnostic (so that makes two diagnostics including the
-error diagnostics since the file doesn't exist) that vimalaya is compressing
-the file.
-
-Once the archive is created vimalaya should have a way to refresh the
-diagnostics of the buffer
+<!-- start with a new email or reply with the following: -->
+<!---->
+<!--     attach: /path/to/directory -->
+<!---->
+<!-- Then append: -->
+<!---->
+<!--     attach: /path/to/directory.tar.gz -->
+<!---->
+<!-- Then write the buffer with `:w` -->
+<!---->
+<!-- Now vimalaya should make the compressed archive. It should update the -->
+<!-- diagnostics to be an info diagnostic (so that makes two diagnostics including the -->
+<!-- error diagnostics since the file doesn't exist) that vimalaya is compressing -->
+<!-- the file. -->
+<!---->
+<!-- Once the archive is created vimalaya should have a way to refresh the -->
+<!-- diagnostics of the buffer -->
 
 ---
 
@@ -168,3 +170,9 @@ Error: received corrupt message of type InvalidContentType
 
 Suggestions:
  - Run with --log-level to enable more verbose logs
+
+---
+
+html to markdown conversion for email bodies and set filetype to markdown or if
+there is a custom filetype for vimalaya then make that inherit from markdown
+somehow
