@@ -111,6 +111,35 @@ When to use this workflow:
 2. If the tests were not tracked with git ensure they are collected into the
    `feat:` commit.
 
+## Refactor Workflows
+
+When to use this workflow:
+- When I request a refactor of the application that doesn't require changing
+  tests
+
+1. Code review the lua/ and plugin/ folders
+
+Rules for code reviewing:
+- Never allow nesting greater than 3 levels
+- Always use 4 space indents
+- Always use guard clauses where possible to remove indenting
+- Never introduce dead code from your changes
+- Never leave stale comments in your code
+- Always remove duplication when it reduces complexity
+- Never remove duplication if it increases complexity
+
+2. Refactor the code in lua/ and plugin/ according to the results of your
+   code review
+
+3. Run `make` and ensure that all tests are passing after refactoring
+
+4. Run `git status --short` to ensure your commit is only going to include
+   modifications to lua/ and plugin/ folders
+
+5. Create a `refactor:` commit with the refactor changes
+
+6. Run `make` to lint check your commit message
+
 ## Test Preservation
 
 - Never weaken, delete, skip, comment out, or replace an existing test assertion
