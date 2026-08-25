@@ -762,7 +762,9 @@ describe(":Mail", function()
             return message ~= nil
         end))
         assert.equal(
-            table.concat(command, ' ') .. '\nHimalaya stdout\nHimalaya stderr\n',
+            'vimalaya command failed:\n```sh\n'
+                .. table.concat(command, ' ')
+                .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
             message
         )
     end)
@@ -1039,7 +1041,9 @@ describe(":Mail", function()
             return message ~= nil
         end))
         assert.equal(
-            table.concat(command, ' ') .. '\nHimalaya stdout\nHimalaya stderr\n',
+            'vimalaya command failed:\n```sh\n'
+                .. table.concat(command, ' ')
+                .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
             message
         )
     end)
@@ -1338,7 +1342,12 @@ describe(":Mail", function()
         assert.is_true(vim.wait(1000, function()
             return message ~= nil
         end))
-        assert.equal(command .. '\ntar: command not found\n', message)
+        assert.equal(
+            'vimalaya command failed:\n```sh\n'
+                .. command
+                .. '\n```stdout\n\n```\n```stderr\ntar: command not found\n```',
+            message
+        )
         assert.equal(vim.log.levels.ERROR, level)
     end)
 

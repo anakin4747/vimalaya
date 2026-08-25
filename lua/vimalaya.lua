@@ -21,6 +21,22 @@ for _, action in pairs(response_actions) do
     response_markers['--- ' .. action.title .. ' ---'] = true
 end
 
+local function notify_command_failure(command, result)
+    if type(command) == 'table' then
+        command = table.concat(command, ' ')
+    end
+    vim.notify(
+        'vimalaya command failed:\n```sh\n'
+            .. command
+            .. '\n```stdout\n'
+            .. vim.trim(result.stdout or '')
+            .. '\n```\n```stderr\n'
+            .. vim.trim(result.stderr or '')
+            .. '\n```',
+        vim.log.levels.ERROR
+    )
+end
+
 local function find_last_response_start(lines)
     local response_start
     for index, line in ipairs(lines) do
@@ -175,10 +191,7 @@ end
 local function process_attachment_download_result(download, result)
     if result.code ~= 0 then
         vim.fn.delete(download.temporary_dir, 'rf')
-        vim.notify(
-            table.concat(download.command, ' ') .. '\n' .. result.stdout .. result.stderr,
-            vim.log.levels.ERROR
-        )
+        notify_command_failure(download.command, result)
         return
     end
     if not vim.api.nvim_buf_is_valid(download.bufnr) then
@@ -498,10 +511,7 @@ local function compress_directory(directory)
         vim.schedule(function()
             compressing_archives[archive] = nil
             if result.code ~= 0 then
-                vim.notify(
-                    table.concat(command, ' ') .. '\n' .. (result.stdout or '') .. (result.stderr or ''),
-                    vim.log.levels.ERROR
-                )
+                notify_command_failure(command, result)
             end
             if last_compose_bufnr and vim.api.nvim_buf_is_valid(last_compose_bufnr) then
                 M.refresh_attachment_diagnostics(last_compose_bufnr)
@@ -564,7 +574,7 @@ end
 
 local function process_message_send_result(send, result)
     if result.code ~= 0 then
-        vim.notify(table.concat(send.command, ' ') .. '\n' .. result.stdout .. result.stderr, vim.log.levels.ERROR)
+        notify_command_failure(send.command, result)
         return
     end
 
