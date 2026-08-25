@@ -537,19 +537,20 @@ local function process_message_send_result(send, result)
     vim.notify(vim.trim(result.stdout))
 end
 
-local function record_compose_header(headers, name, value)
+local function add_message_header(headers, name, value)
     if not name then
-        return
+        return headers
     end
 
     name = name:lower()
     if type(headers[name]) ~= 'table' then
         headers[name] = value
-        return
+        return headers
     end
     if value ~= '' then
         table.insert(headers[name], value)
     end
+    return headers
 end
 
 function M.send_composed_message()
@@ -576,7 +577,7 @@ function M.send_composed_message()
         end
 
         local name, value = lines[index]:match('^([^:]+):%s*(.*)$')
-        record_compose_header(headers, name, value)
+        headers = add_message_header(headers, name, value)
     end
 
     local command = { 'himalaya', 'message', 'compose' }
