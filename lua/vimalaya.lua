@@ -1,7 +1,9 @@
 local M = {}
 
 local main_menu_name = "vimalaya main menu"
+local attachment_diagnostics_namespace = vim.api.nvim_create_namespace('vimalaya_attachments')
 local last_compose_bufnr
+local enable_attachment_diagnostics
 local response_actions = {
     reply = { title = 'Reply', subject = 'Re: ' },
     replyall = { title = 'Reply All', subject = 'Re: ' },
@@ -67,6 +69,7 @@ function M.open_new_message_buffer()
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_new_message", true)
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'to: ', 'cc: ', 'bcc: ', 'subject: ' })
     last_compose_bufnr = bufnr
+    enable_attachment_diagnostics(bufnr)
     vim.api.nvim_set_current_buf(bufnr)
 end
 
@@ -475,6 +478,7 @@ function M.append_response_form(kind)
     table.insert(form, '')
     vim.api.nvim_buf_set_lines(0, -1, -1, false, form)
     last_compose_bufnr = vim.api.nvim_get_current_buf()
+    enable_attachment_diagnostics(last_compose_bufnr)
 end
 
 function M.attach_paths_to_message(paths, new_message)
@@ -634,6 +638,33 @@ function M.can_send()
         end
     end
     return fields.to and fields.cc and fields.subject
+end
+
+function M.refresh_attachment_diagnostics(bufnr)
+    local diagnostics = {}
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    for index, line in ipairs(lines) do
+        local path = line:match('^attach:%s*(.+)$')
+        if path and vim.fn.filereadable(vim.fn.fnamemodify(path, ':p')) ~= 1 then
+            table.insert(diagnostics, {
+                lnum = index - 1,
+                col = 0,
+                severity = vim.diagnostic.severity.WARN,
+                message = 'attached file does not exist: ' .. path,
+            })
+        end
+    end
+    vim.diagnostic.set(attachment_diagnostics_namespace, bufnr, diagnostics)
+end
+
+function enable_attachment_diagnostics(bufnr)
+    vim.api.nvim_create_autocmd({ 'TextChanged', 'TextChangedI', 'BufWritePost' }, {
+        buffer = bufnr,
+        callback = function()
+            M.refresh_attachment_diagnostics(bufnr)
+        end,
+    })
+    M.refresh_attachment_diagnostics(bufnr)
 end
 
 return M

@@ -144,14 +144,6 @@ highlighting of the buffer
 
 ---
 
-have red syntax highlighting for `attach:` lines with a file that does not
-exist. This will pair nicely with the automatic creation of archives since as
-soon as the buffer changes with the .tar.gz the syntax highlighting will be
-red. Then on write we know that the archive is successfully created if the red
-highlighting goes away.
-
----
-
 Maybe move reply's and forwards to use :Mail new instead of reusing the same
 buffer???
 

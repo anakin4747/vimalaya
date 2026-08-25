@@ -1303,4 +1303,22 @@ describe(":Mail", function()
     it("send removes forward sections after successful sends", function()
         assert_send_removes_response('forward')
     end)
+
+    it("warns with a diagnostic when an attached file does not exist", function()
+        vim.cmd('Mail new')
+        local email = vim.api.nvim_get_current_buf()
+        vim.api.nvim_buf_set_lines(email, -1, -1, false, {
+            'attach: /bin/sh',
+            'attach: /does/not/exist.txt',
+        })
+
+        vim.api.nvim_exec_autocmds('TextChanged', { buffer = email })
+
+        local diagnostics = vim.diagnostic.get(email)
+        assert.equal(1, #diagnostics)
+        assert.equal(vim.diagnostic.severity.WARN, diagnostics[1].severity)
+        assert.equal('attached file does not exist: /does/not/exist.txt', diagnostics[1].message)
+        assert.equal('attach: /does/not/exist.txt', vim.api.nvim_buf_get_lines(
+            email, diagnostics[1].lnum, diagnostics[1].lnum + 1, false)[1])
+    end)
 end)
