@@ -1,32 +1,16 @@
-local function current_response_has_required_fields()
-    local response_markers = {
-        ['--- Reply ---'] = true,
-        ['--- Reply All ---'] = true,
-        ['--- Forward ---'] = true,
-    }
-    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    local response_start
-    for index, line in ipairs(lines) do
-        if response_markers[line] then
-            response_start = index
-        end
+local function available_subcommands(include_send)
+    local subcommands = { 'close', 'new' }
+    if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_main_menu')
+        or pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_mailbox') then
+        table.insert(subcommands, 'refresh')
     end
-    if not response_start then
-        return false
+    if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_message_id') then
+        vim.list_extend(subcommands, { 'forward', 'reply', 'replyall' })
     end
-
-    local fields = {}
-    for index = response_start + 1, #lines do
-        if lines[index] == '' then
-            break
-        end
-
-        local name = lines[index]:match('^([^:]+):')
-        if name then
-            fields[name:lower()] = true
-        end
+    if include_send then
+        table.insert(subcommands, 'send')
     end
-    return fields.to and fields.cc and fields.subject
+    return subcommands
 end
 
 vim.api.nvim_create_user_command('Mail', function(options)
@@ -37,14 +21,7 @@ vim.api.nvim_create_user_command('Mail', function(options)
         return
     end
 
-    local subcommands = { 'close', 'new' }
-    if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_main_menu')
-        or pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_mailbox') then
-        table.insert(subcommands, 'refresh')
-    end
-    if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_message_id') then
-        vim.list_extend(subcommands, { 'forward', 'reply', 'replyall' })
-    end
+    local subcommands = available_subcommands(false)
     local matches = vim.tbl_filter(function(subcommand)
         return vim.startswith(subcommand, options.args)
     end, subcommands)
@@ -73,21 +50,12 @@ end, {
     nargs = '?',
     range = true,
     complete = function(arg_lead)
-        local subcommands = { 'close', 'new' }
-        if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_main_menu')
-            or pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_mailbox') then
-            table.insert(subcommands, 'refresh')
-        end
-        if pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_message_id') then
-            vim.list_extend(subcommands, { 'forward', 'reply', 'replyall' })
-        end
+        local vimalaya = require('vimalaya')
         local can_send = pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_new_message')
         if not can_send then
-            can_send = current_response_has_required_fields()
+            can_send = vimalaya.current_response_has_required_fields()
         end
-        if can_send then
-            table.insert(subcommands, 'send')
-        end
+        local subcommands = available_subcommands(can_send)
 
         return vim.tbl_filter(function(subcommand)
             return vim.startswith(subcommand, arg_lead)

@@ -2,6 +2,31 @@ local M = {}
 
 local main_menu_name = "vimalaya main menu"
 local last_compose_bufnr
+local response_actions = {
+    reply = { title = 'Reply', subject = 'Re: ' },
+    replyall = { title = 'Reply All', subject = 'Re: ' },
+    forward = { title = 'Forward', subject = 'Fwd: ' },
+}
+local response_markers = {}
+for _, action in pairs(response_actions) do
+    response_markers['--- ' .. action.title .. ' ---'] = true
+end
+
+local function find_last_response_start(lines)
+    local response_start
+    for index, line in ipairs(lines) do
+        if response_markers[line] then
+            response_start = index
+        end
+    end
+    return response_start
+end
+
+local function replace_readonly_buffer_lines(bufnr, lines)
+    vim.bo[bufnr].readonly = false
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+    vim.bo[bufnr].readonly = true
+end
 
 local function parse_account_setting(line)
     local key, value = line:match('^([%w%.]+)%s*=%s*(.-)%s*$')
@@ -293,9 +318,7 @@ local function display_envelopes_and_enable_opening(bufnr, mailbox, result)
         table.insert(lines, envelope.date .. ' ' .. envelope.subject)
     end
 
-    vim.bo[bufnr].readonly = false
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-    vim.bo[bufnr].readonly = true
+    replace_readonly_buffer_lines(bufnr, lines)
     vim.keymap.set('n', '<CR>', function()
         open_message_at_cursor(mailbox, envelopes.envelopes)
     end, { buffer = bufnr })
@@ -338,9 +361,7 @@ local function display_mailbox_list(bufnr, result)
         table.insert(lines, mailbox.name)
     end
 
-    vim.bo[bufnr].readonly = false
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-    vim.bo[bufnr].readonly = true
+    replace_readonly_buffer_lines(bufnr, lines)
 end
 
 local function request_mailbox_list(bufnr)
@@ -421,12 +442,7 @@ function M.append_response_form(kind)
         end
     end
 
-    local response = {
-        reply = { title = 'Reply', subject = 'Re: ' },
-        replyall = { title = 'Reply All', subject = 'Re: ' },
-        forward = { title = 'Forward', subject = 'Fwd: ' },
-    }
-    local action = response[kind]
+    local action = response_actions[kind]
     vim.api.nvim_buf_set_lines(0, -1, -1, false, {
         '',
         '',
@@ -470,17 +486,7 @@ function M.attach_paths_to_message(paths, new_message)
         end
     end
 
-    local compose_start = 1
-    local response_markers = {
-        ['--- Reply ---'] = true,
-        ['--- Reply All ---'] = true,
-        ['--- Forward ---'] = true,
-    }
-    for index, line in ipairs(lines) do
-        if response_markers[line] then
-            compose_start = index + 1
-        end
-    end
+    local compose_start = (find_last_response_start(lines) or 0) + 1
 
     local insert_at = #lines
     for index = compose_start, #lines do
@@ -533,17 +539,7 @@ function M.send_composed_message()
     end
 
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    local response_start = is_new_message and 0 or nil
-    local response_markers = {
-        ['--- Reply ---'] = true,
-        ['--- Reply All ---'] = true,
-        ['--- Forward ---'] = true,
-    }
-    for index, line in ipairs(lines) do
-        if response_markers[line] then
-            response_start = index
-        end
-    end
+    local response_start = is_new_message and 0 or find_last_response_start(lines)
     if not response_start then
         return
     end
@@ -591,6 +587,27 @@ function M.send_composed_message()
             process_message_send_result(send, result)
         end)
     end)
+end
+
+function M.current_response_has_required_fields()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local response_start = find_last_response_start(lines)
+    if not response_start then
+        return false
+    end
+
+    local fields = {}
+    for index = response_start + 1, #lines do
+        if lines[index] == '' then
+            break
+        end
+
+        local name = lines[index]:match('^([^:]+):')
+        if name then
+            fields[name:lower()] = true
+        end
+    end
+    return fields.to and fields.cc and fields.subject
 end
 
 return M
