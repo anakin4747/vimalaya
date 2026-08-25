@@ -2,6 +2,12 @@ local M = {}
 
 local main_menu_name = "vimalaya main menu"
 local attachment_diagnostics_namespace = vim.api.nvim_create_namespace('vimalaya_attachments')
+vim.diagnostic.config({
+    underline = true,
+    virtual_text = false,
+    signs = false,
+    update_in_insert = true,
+}, attachment_diagnostics_namespace)
 local compressing_archives = {}
 local last_compose_bufnr
 local enable_attachment_diagnostics
