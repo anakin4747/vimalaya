@@ -16,7 +16,7 @@ local function update_account(accounts, account, line)
     end
 end
 
-local function configured_email()
+local function find_default_account_email()
     local config_dir = vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')
     local ok, lines = pcall(vim.fn.readfile, config_dir .. '/himalaya/config.toml')
     if not ok then
@@ -568,7 +568,7 @@ function M.send_response()
     end
 
     local command = { 'himalaya', 'message', 'compose' }
-    local email = configured_email()
+    local email = find_default_account_email()
     if email then
         vim.list_extend(command, { '--from', email })
     end
