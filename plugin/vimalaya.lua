@@ -1,4 +1,4 @@
-local function response_can_be_sent()
+local function current_response_has_required_fields()
     local response_markers = {
         ['--- Reply ---'] = true,
         ['--- Reply All ---'] = true,
@@ -33,7 +33,7 @@ vim.api.nvim_create_user_command('Mail', function(options)
     local vimalaya = require('vimalaya')
     if options.range > 0 then
         local paths = vim.api.nvim_buf_get_lines(0, options.line1 - 1, options.line2, false)
-        vimalaya.attach_paths(paths, options.args == 'new')
+        vimalaya.attach_paths_to_message(paths, options.args == 'new')
         return
     end
 
@@ -57,17 +57,17 @@ vim.api.nvim_create_user_command('Mail', function(options)
     end
 
     if options.args == 'close' then
-        vimalaya.close()
+        vimalaya.close_all_mail_buffers()
     elseif options.args == 'new' then
-        vimalaya.open_new_message()
+        vimalaya.open_new_message_buffer()
     elseif options.args == 'reply' or options.args == 'replyall' or options.args == 'forward' then
-        vimalaya.append_response(options.args)
+        vimalaya.append_response_form(options.args)
     elseif options.args == 'send' then
-        vimalaya.send_response()
+        vimalaya.send_composed_message()
     elseif options.args == 'refresh' then
-        vimalaya.refresh()
+        vimalaya.refresh_current_mail_view()
     else
-        vimalaya.open_main_menu()
+        vimalaya.open_main_menu_buffer()
     end
 end, {
     nargs = '?',
@@ -83,7 +83,7 @@ end, {
         end
         local can_send = pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_new_message')
         if not can_send then
-            can_send = response_can_be_sent()
+            can_send = current_response_has_required_fields()
         end
         if can_send then
             table.insert(subcommands, 'send')

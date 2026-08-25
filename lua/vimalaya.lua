@@ -3,7 +3,7 @@ local M = {}
 local main_menu_name = "vimalaya main menu"
 local last_compose_bufnr
 
-local function update_account(accounts, account, line)
+local function record_account_settings_from_config_line(accounts, account, line)
     accounts[account] = accounts[account] or {}
     local key, value = line:match('^([%w%.]+)%s*=%s*(.-)%s*$')
     if value then
@@ -28,7 +28,7 @@ local function find_default_account_email()
     for _, line in ipairs(lines) do
         account = line:match('^%[accounts%.([^%]]+)%]$') or account
         if account then
-            update_account(accounts, account, line)
+            record_account_settings_from_config_line(accounts, account, line)
         end
     end
 
@@ -39,7 +39,7 @@ local function find_default_account_email()
     end
 end
 
-function M.open_new_message()
+function M.open_new_message_buffer()
     local bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ' vimalaya new email')
     vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
@@ -49,7 +49,7 @@ function M.open_new_message()
     vim.api.nvim_set_current_buf(bufnr)
 end
 
-local function find_attachment_line(bufnr, attachment_index)
+local function find_attachment_filename_line(bufnr, attachment_index)
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local attachments_start
     for index = #lines, 1, -1 do
@@ -73,7 +73,7 @@ local function find_attachment_line(bufnr, attachment_index)
     end
 end
 
-local function download_directory()
+local function resolve_download_directory()
     if vim.env.XDG_DOWNLOAD_DIR then
         return vim.fn.expand(vim.env.XDG_DOWNLOAD_DIR)
     end
@@ -93,8 +93,14 @@ local function download_directory()
     return vim.env.HOME .. '/Downloads'
 end
 
-local function finish_attachment_download(bufnr, attachment_index, attachment, downloaded, temporary_dir)
-    local destination_dir = download_directory()
+local function move_attachment_to_downloads_and_display_path(
+    bufnr,
+    attachment_index,
+    attachment,
+    downloaded,
+    temporary_dir
+)
+    local destination_dir = resolve_download_directory()
     vim.fn.mkdir(destination_dir, 'p')
     local destination = destination_dir .. '/' .. vim.fn.fnamemodify(downloaded.path, ':t')
     if vim.fn.rename(downloaded.path, destination) ~= 0 then
@@ -107,7 +113,7 @@ local function finish_attachment_download(bufnr, attachment_index, attachment, d
     if not vim.api.nvim_buf_is_valid(bufnr) then
         return
     end
-    local line = find_attachment_line(bufnr, attachment_index)
+    local line = find_attachment_filename_line(bufnr, attachment_index)
     if not line then
         return
     end
@@ -116,9 +122,16 @@ local function finish_attachment_download(bufnr, attachment_index, attachment, d
     })
 end
 
-local function handle_attachment_scan(bufnr, attachment_index, attachment, downloaded, temporary_dir, scan_result)
+local function process_attachment_scan_result(
+    bufnr,
+    attachment_index,
+    attachment,
+    downloaded,
+    temporary_dir,
+    scan_result
+)
     if scan_result.code == 0 then
-        finish_attachment_download(bufnr, attachment_index, attachment, downloaded, temporary_dir)
+        move_attachment_to_downloads_and_display_path(bufnr, attachment_index, attachment, downloaded, temporary_dir)
         return
     end
 
@@ -130,15 +143,22 @@ local function handle_attachment_scan(bufnr, attachment_index, attachment, downl
     vim.notify('ClamAV could not scan the attachment; attachment was deleted', vim.log.levels.ERROR)
 end
 
-local function scan_attachment(bufnr, attachment_index, attachment, downloaded, temporary_dir)
+local function scan_downloaded_attachment(bufnr, attachment_index, attachment, downloaded, temporary_dir)
     vim.system({ 'clamscan', downloaded.path }, {}, function(scan_result)
         vim.schedule(function()
-            handle_attachment_scan(bufnr, attachment_index, attachment, downloaded, temporary_dir, scan_result)
+            process_attachment_scan_result(
+                bufnr,
+                attachment_index,
+                attachment,
+                downloaded,
+                temporary_dir,
+                scan_result
+            )
         end)
     end)
 end
 
-local function handle_attachment_download(
+local function process_attachment_download_result(
     bufnr,
     attachment_index,
     attachment,
@@ -163,10 +183,10 @@ local function handle_attachment_download(
         vim.fn.delete(temporary_dir, 'rf')
         return
     end
-    scan_attachment(bufnr, attachment_index, attachment, downloaded, temporary_dir)
+    scan_downloaded_attachment(bufnr, attachment_index, attachment, downloaded, temporary_dir)
 end
 
-local function download_attachment(bufnr, mailbox, id, attachment_index, attachment)
+local function download_and_scan_attachment(bufnr, mailbox, id, attachment_index, attachment)
     local temporary_dir = vim.fn.tempname()
     vim.fn.mkdir(temporary_dir, 'p')
     local command = {
@@ -175,7 +195,7 @@ local function download_attachment(bufnr, mailbox, id, attachment_index, attachm
     }
     vim.system(command, {}, function(download_result)
         vim.schedule(function()
-            handle_attachment_download(
+            process_attachment_download_result(
                 bufnr,
                 attachment_index,
                 attachment,
@@ -187,17 +207,17 @@ local function download_attachment(bufnr, mailbox, id, attachment_index, attachm
     end)
 end
 
-local function attachment_at_cursor(bufnr, attachments)
+local function find_attachment_index_at_cursor(bufnr, attachments)
     local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
     for index = 1, #attachments do
-        if find_attachment_line(bufnr, index) == cursor_line then
+        if find_attachment_filename_line(bufnr, index) == cursor_line then
             return index
         end
     end
 end
 
-local function select_attachment(bufnr, mailbox, id, attachments)
-    local attachment_index = attachment_at_cursor(bufnr, attachments)
+local function download_attachment_at_cursor(bufnr, mailbox, id, attachments)
+    local attachment_index = find_attachment_index_at_cursor(bufnr, attachments)
     if not attachment_index then
         return
     end
@@ -205,10 +225,10 @@ local function select_attachment(bufnr, mailbox, id, attachments)
         vim.notify('ClamAV antivirus is not installed; attachments cannot be downloaded', vim.log.levels.ERROR)
         return
     end
-    download_attachment(bufnr, mailbox, id, attachment_index, attachments[attachment_index])
+    download_and_scan_attachment(bufnr, mailbox, id, attachment_index, attachments[attachment_index])
 end
 
-local function handle_attachments(bufnr, mailbox, id, result)
+local function display_attachments_and_enable_downloads(bufnr, mailbox, id, result)
     if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
         return
     end
@@ -230,19 +250,19 @@ local function handle_attachments(bufnr, mailbox, id, result)
     vim.api.nvim_buf_set_lines(bufnr, line_count, line_count, false, lines)
 
     vim.keymap.set('n', '<CR>', function()
-        select_attachment(bufnr, mailbox, id, attachments)
+        download_attachment_at_cursor(bufnr, mailbox, id, attachments)
     end, { buffer = bufnr })
 end
 
-local function load_attachments(bufnr, mailbox, id)
+local function request_attachment_list(bufnr, mailbox, id)
     vim.system({ 'himalaya', 'attachment', 'list', '--mailbox', mailbox, '--json', id }, {}, function(result)
         vim.schedule(function()
-            handle_attachments(bufnr, mailbox, id, result)
+            display_attachments_and_enable_downloads(bufnr, mailbox, id, result)
         end)
     end)
 end
 
-local function handle_message(bufnr, mailbox, id, result)
+local function display_message_and_request_attachments(bufnr, mailbox, id, result)
     if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
         return
     end
@@ -253,7 +273,7 @@ local function handle_message(bufnr, mailbox, id, result)
     end
 
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-    load_attachments(bufnr, mailbox, tostring(id))
+    request_attachment_list(bufnr, mailbox, tostring(id))
 end
 
 function M.open_message(mailbox, id, subject)
@@ -275,17 +295,17 @@ function M.open_message(mailbox, id, subject)
 
     vim.system({ 'himalaya', 'message', 'read', '--mailbox', mailbox, id }, {}, function(result)
         vim.schedule(function()
-            handle_message(bufnr, mailbox, id, result)
+            display_message_and_request_attachments(bufnr, mailbox, id, result)
         end)
     end)
 end
 
-local function open_selected_message(mailbox, envelope_ids, envelope_subjects)
+local function open_message_at_cursor(mailbox, envelope_ids, envelope_subjects)
     local line = vim.fn.line('.')
     M.open_message(mailbox, envelope_ids[line], envelope_subjects[line])
 end
 
-local function handle_mailbox(bufnr, mailbox, result)
+local function display_envelopes_and_enable_opening(bufnr, mailbox, result)
     if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
         return
     end
@@ -304,19 +324,19 @@ local function handle_mailbox(bufnr, mailbox, result)
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
     vim.bo[bufnr].readonly = true
     vim.keymap.set('n', '<CR>', function()
-        open_selected_message(mailbox, envelope_ids, envelope_subjects)
+        open_message_at_cursor(mailbox, envelope_ids, envelope_subjects)
     end, { buffer = bufnr })
 end
 
-local function load_mailbox(bufnr, mailbox)
+local function request_envelope_list(bufnr, mailbox)
     vim.system({ 'himalaya', 'envelope', 'list', '--mailbox', mailbox, '--json', '--page-size', '100' }, {}, function(result)
         vim.schedule(function()
-            handle_mailbox(bufnr, mailbox, result)
+            display_envelopes_and_enable_opening(bufnr, mailbox, result)
         end)
     end)
 end
 
-function M.open_mailbox(mailbox)
+function M.open_mailbox_buffer(mailbox)
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
         local has_mailbox, existing_mailbox = pcall(vim.api.nvim_buf_get_var, bufnr, "vimalaya_mailbox")
         if has_mailbox and existing_mailbox == mailbox then
@@ -331,10 +351,10 @@ function M.open_mailbox(mailbox)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_mailbox", mailbox)
     vim.bo[bufnr].readonly = true
     vim.api.nvim_set_current_buf(bufnr)
-    load_mailbox(bufnr, mailbox)
+    request_envelope_list(bufnr, mailbox)
 end
 
-local function handle_main_menu(bufnr, result)
+local function display_mailbox_list(bufnr, result)
     if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
         return
     end
@@ -350,15 +370,15 @@ local function handle_main_menu(bufnr, result)
     vim.bo[bufnr].readonly = true
 end
 
-local function load_main_menu(bufnr)
+local function request_mailbox_list(bufnr)
     vim.system({ 'himalaya', 'mailbox', 'list', '--json' }, {}, function(result)
         vim.schedule(function()
-            handle_main_menu(bufnr, result)
+            display_mailbox_list(bufnr, result)
         end)
     end)
 end
 
-function M.open_main_menu()
+function M.open_main_menu_buffer()
     if vim.fn.executable('himalaya') == 0 then
         vim.notify('himalaya is not installed', vim.log.levels.ERROR)
         return
@@ -383,26 +403,26 @@ function M.open_main_menu()
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_main_menu", true)
     vim.bo[bufnr].readonly = true
     vim.keymap.set('n', '<CR>', function()
-        M.open_mailbox(vim.api.nvim_get_current_line())
+        M.open_mailbox_buffer(vim.api.nvim_get_current_line())
     end, { buffer = bufnr })
     vim.api.nvim_set_current_buf(bufnr)
 
-    load_main_menu(bufnr)
+    request_mailbox_list(bufnr)
 end
 
-function M.refresh()
+function M.refresh_current_mail_view()
     if pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_main_menu") then
-        load_main_menu(vim.api.nvim_get_current_buf())
+        request_mailbox_list(vim.api.nvim_get_current_buf())
         return
     end
 
     local has_mailbox, mailbox = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_mailbox")
     if has_mailbox then
-        load_mailbox(vim.api.nvim_get_current_buf(), mailbox)
+        request_envelope_list(vim.api.nvim_get_current_buf(), mailbox)
     end
 end
 
-function M.close()
+function M.close_all_mail_buffers()
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
         if pcall(vim.api.nvim_buf_get_var, bufnr, "vimalaya") then
             vim.api.nvim_buf_delete(bufnr, { force = true })
@@ -410,7 +430,7 @@ function M.close()
     end
 end
 
-function M.append_response(kind)
+function M.append_response_form(kind)
     if not pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_message_id") then
         vim.notify(':Mail ' .. kind .. ' is only available in email buffers', vim.log.levels.ERROR)
         return
@@ -447,7 +467,7 @@ function M.append_response(kind)
     last_compose_bufnr = vim.api.nvim_get_current_buf()
 end
 
-function M.attach_paths(paths, new_message)
+function M.attach_paths_to_message(paths, new_message)
     paths = vim.tbl_map(function(path)
         return vim.fn.fnamemodify(path, ':p')
     end, paths)
@@ -460,7 +480,7 @@ function M.attach_paths(paths, new_message)
     end
 
     if new_message or not last_compose_bufnr or not vim.api.nvim_buf_is_valid(last_compose_bufnr) then
-        M.open_new_message()
+        M.open_new_message_buffer()
     end
 
     local lines = vim.api.nvim_buf_get_lines(last_compose_bufnr, 0, -1, false)
@@ -499,7 +519,7 @@ function M.attach_paths(paths, new_message)
     vim.api.nvim_buf_set_lines(last_compose_bufnr, insert_at, insert_at, false, attachments)
 end
 
-local function handle_send_result(result, command, bufnr, is_new_message, response_start)
+local function process_message_send_result(result, command, bufnr, is_new_message, response_start)
     if result.code ~= 0 then
         vim.notify(table.concat(command, ' ') .. '\n' .. result.stdout .. result.stderr, vim.log.levels.ERROR)
         return
@@ -515,7 +535,7 @@ local function handle_send_result(result, command, bufnr, is_new_message, respon
     vim.notify(vim.trim(result.stdout))
 end
 
-local function add_header(headers, name, value)
+local function record_compose_header(headers, name, value)
     if not name then
         return
     end
@@ -530,7 +550,7 @@ local function add_header(headers, name, value)
     end
 end
 
-function M.send_response()
+function M.send_composed_message()
     local bufnr = vim.api.nvim_get_current_buf()
     local is_message = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_message_id")
     local is_new_message = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_new_message")
@@ -564,7 +584,7 @@ function M.send_response()
         end
 
         local name, value = lines[index]:match('^([^:]+):%s*(.*)$')
-        add_header(headers, name, value)
+        record_compose_header(headers, name, value)
     end
 
     local command = { 'himalaya', 'message', 'compose' }
@@ -589,7 +609,7 @@ function M.send_response()
 
     vim.system(command, {}, function(result)
         vim.schedule(function()
-            handle_send_result(result, command, bufnr, is_new_message, response_start)
+            process_message_send_result(result, command, bufnr, is_new_message, response_start)
         end)
     end)
 end
