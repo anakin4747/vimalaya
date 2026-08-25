@@ -7,8 +7,7 @@ local after_each = busted.after_each
 
 describe(":Mail", function()
     local executable
-    local himalaya_mocks
-    local clamscan_mock
+    local executable_mocks
     local download_dir
     local notify
     local system
@@ -22,10 +21,10 @@ describe(":Mail", function()
         download_dir = vim.fn.tempname()
         vim.fn.mkdir(download_dir, 'p')
         vim.env.XDG_DOWNLOAD_DIR = download_dir
-        clamscan_mock = function()
-            return { code = 0, stdout = '', stderr = '' }
-        end
-        himalaya_mocks = {
+        executable_mocks = {
+            ['clamscan'] = function()
+                return { code = 0, stdout = '', stderr = '' }
+            end,
             ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
             ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
             ['himalaya message read --mailbox Inbox 1'] = 'tests/message.txt',
@@ -61,10 +60,10 @@ describe(":Mail", function()
                     end
                 end
             end
-            local mock = command[1] == 'clamscan' and clamscan_mock
-                or himalaya_mocks[table.concat(lookup_command, ' ')]
+            local mock = executable_mocks[table.concat(lookup_command, ' ')]
+                or executable_mocks[command[1]]
             if command[1] == 'himalaya' and command[2] == 'message' and command[3] == 'compose' then
-                mock = mock or himalaya_mocks['himalaya message compose']
+                mock = mock or executable_mocks['himalaya message compose']
             end
             assert.is_not_nil(mock, 'unexpected command: ' .. command_string)
 
@@ -634,7 +633,7 @@ describe(":Mail", function()
 
     it("downloads an attachment", function()
         local temporary_path
-        himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function(command)
+        executable_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function(command)
             local temporary_dir = download_dir
             for index, argument in ipairs(command) do
                 if argument == '--dir' then
@@ -662,7 +661,7 @@ describe(":Mail", function()
 
     it("scans downloaded attachments with ClamAV", function()
         local scanned_path
-        clamscan_mock = function(command)
+        executable_mocks['clamscan'] = function(command)
             scanned_path = command[2]
             return { code = 0, stdout = '', stderr = '' }
         end
@@ -680,7 +679,7 @@ describe(":Mail", function()
 
     it("deletes attachments when ClamAV detects a virus", function()
         local infected_path
-        clamscan_mock = function(command)
+        executable_mocks['clamscan'] = function(command)
             infected_path = command[2]
             return { code = 1, stdout = 'Eicar-Test-Signature FOUND\n', stderr = '' }
         end
@@ -696,7 +695,7 @@ describe(":Mail", function()
 
     it("does not display a download path when ClamAV detects a virus", function()
         local scanned = false
-        clamscan_mock = function()
+        executable_mocks['clamscan'] = function()
             scanned = true
             return { code = 1, stdout = 'Eicar-Test-Signature FOUND\n', stderr = '' }
         end
@@ -729,7 +728,7 @@ describe(":Mail", function()
 
     it("does not display an attachment path when downloading fails", function()
         local finished = false
-        himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function()
+        executable_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function()
             return { code = 1, stdout = 'Himalaya stdout\n', stderr = 'Himalaya stderr\n' }
         end
         vim.notify = function()
@@ -749,7 +748,7 @@ describe(":Mail", function()
     it("reports the failed attachment download command, stdout, and stderr", function()
         local message
         local command
-        himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function(args)
+        executable_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function(args)
             command = args
             return { code = 1, stdout = 'Himalaya stdout\n', stderr = 'Himalaya stderr\n' }
         end
@@ -999,7 +998,7 @@ describe(":Mail", function()
             '',
             'Example body.',
         })
-        himalaya_mocks['himalaya message compose'] = function(args)
+        executable_mocks['himalaya message compose'] = function(args)
             command = args
             return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
         end
@@ -1024,7 +1023,7 @@ describe(":Mail", function()
         local command
         open_first_message()
         vim.cmd('Mail reply')
-        himalaya_mocks['himalaya message compose'] = function(args)
+        executable_mocks['himalaya message compose'] = function(args)
             command = args
             return {
                 code = 1,
@@ -1052,7 +1051,7 @@ describe(":Mail", function()
         open_first_message()
         vim.cmd('Mail reply')
         vim.api.nvim_buf_set_lines(0, -2, -2, false, { 'attach: /bin/bash' })
-        himalaya_mocks['himalaya message compose'] = function(args)
+        executable_mocks['himalaya message compose'] = function(args)
             command = args
             return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
         end
@@ -1091,7 +1090,7 @@ describe(":Mail", function()
             '',
             'Thanks.',
         })
-        himalaya_mocks['himalaya message compose'] = function(args)
+        executable_mocks['himalaya message compose'] = function(args)
             command = args
             return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
         end
@@ -1131,7 +1130,7 @@ describe(":Mail", function()
             '',
             'Thanks.',
         })
-        himalaya_mocks['himalaya message compose'] = function(args)
+        executable_mocks['himalaya message compose'] = function(args)
             command = args
             return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
         end
@@ -1263,7 +1262,7 @@ describe(":Mail", function()
         local source = vim.api.nvim_create_buf(true, false)
         vim.api.nvim_buf_set_lines(source, 0, -1, false, { directory })
         vim.api.nvim_set_current_buf(source)
-        himalaya_mocks['tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'] = function()
+        executable_mocks['tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'] = function()
             return { code = 0, stdout = '', stderr = '' }
         end
 
@@ -1283,7 +1282,7 @@ describe(":Mail", function()
         local source = vim.api.nvim_create_buf(true, false)
         vim.api.nvim_buf_set_lines(source, 0, -1, false, { directory })
         vim.api.nvim_set_current_buf(source)
-        himalaya_mocks['tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'] = function()
+        executable_mocks['tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'] = function()
             return { code = 0, stdout = '', stderr = '' }
         end
 
@@ -1302,7 +1301,7 @@ describe(":Mail", function()
         local source = vim.api.nvim_create_buf(true, false)
         vim.api.nvim_buf_set_lines(source, 0, -1, false, { '/bin/bash', directory, '/bin/sh' })
         vim.api.nvim_set_current_buf(source)
-        himalaya_mocks['tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'] = function()
+        executable_mocks['tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'] = function()
             return { code = 0, stdout = '', stderr = '' }
         end
 
@@ -1328,7 +1327,7 @@ describe(":Mail", function()
         vim.api.nvim_buf_set_lines(source, 0, -1, false, { directory })
         vim.api.nvim_set_current_buf(source)
         local command = 'tar -czf ' .. directory .. '.tar.gz -C ' .. download_dir .. ' payload'
-        himalaya_mocks[command] = function()
+        executable_mocks[command] = function()
             return { code = 127, stdout = '', stderr = 'tar: command not found\n' }
         end
         vim.notify = function(notification, notification_level)
@@ -1371,7 +1370,7 @@ describe(":Mail", function()
         open_first_message()
         local original = vim.api.nvim_buf_get_lines(0, 0, -1, false)
         vim.cmd('Mail ' .. kind)
-        himalaya_mocks['himalaya message compose'] = function()
+        executable_mocks['himalaya message compose'] = function()
             return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
         end
 
