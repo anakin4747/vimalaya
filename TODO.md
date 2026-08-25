@@ -165,11 +165,4 @@ when downloading attachments run clamscan on them
 
 ---
 
-Before downloading an attachment first check if clamscan is available, if it is
-not emit a friendly warning to the user that clamav anitvirus is not installed
-so attachments can not be downloaded. This error message should be similar in
-style and spirit to the error if himalaya is not installed.
-
----
-
 At main menu allow selecting the accounts first

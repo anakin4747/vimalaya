@@ -104,6 +104,13 @@ local function load_attachments(bufnr, mailbox, id)
                 if not attachment_index then
                     return
                 end
+                if vim.fn.executable('clamscan') == 0 then
+                    vim.notify(
+                        'ClamAV antivirus is not installed; attachments cannot be downloaded',
+                        vim.log.levels.ERROR
+                    )
+                    return
+                end
 
                 local attachment = attachments[attachment_index]
                 local command = {

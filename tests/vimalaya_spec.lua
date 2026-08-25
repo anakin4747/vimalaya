@@ -617,6 +617,22 @@ describe(":Mail", function()
         vim.fn.delete(path)
     end)
 
+    it("warns when ClamAV is not installed instead of downloading attachments", function()
+        local message
+        vim.fn.executable = function()
+            return 0
+        end
+        vim.notify = function(notification)
+            message = notification
+        end
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.equal('ClamAV antivirus is not installed; attachments cannot be downloaded', message)
+    end)
+
     it("does not display an attachment path when downloading fails", function()
         local finished = false
         himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function()
