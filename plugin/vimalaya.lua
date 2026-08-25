@@ -53,7 +53,7 @@ end, {
         local vimalaya = require('vimalaya')
         local can_send = pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_new_message')
         if not can_send then
-            can_send = vimalaya.current_response_has_required_fields()
+            can_send = vimalaya.can_send()
         end
         local subcommands = available_subcommands(can_send)
 

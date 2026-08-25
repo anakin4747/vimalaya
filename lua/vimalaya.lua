@@ -612,7 +612,7 @@ function M.send_composed_message()
     end)
 end
 
-function M.current_response_has_required_fields()
+function M.can_send()
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
     local response_start = find_last_response_start(lines)
     if not response_start then
