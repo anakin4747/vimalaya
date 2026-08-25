@@ -3,6 +3,19 @@ local M = {}
 local main_menu_name = "vimalaya main menu"
 local last_compose_bufnr
 
+local function update_account(accounts, account, line)
+    accounts[account] = accounts[account] or {}
+    local key, value = line:match('^([%w%.]+)%s*=%s*(.-)%s*$')
+    if value then
+        value = value:match('^"(.*)"$') or value
+    end
+    if key == 'default' then
+        accounts[account].default = value == 'true'
+    elseif key == 'smtp.sasl.plain.username' then
+        accounts[account].email = value
+    end
+end
+
 local function configured_email()
     local config_dir = vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')
     local ok, lines = pcall(vim.fn.readfile, config_dir .. '/himalaya/config.toml')
@@ -15,16 +28,7 @@ local function configured_email()
     for _, line in ipairs(lines) do
         account = line:match('^%[accounts%.([^%]]+)%]$') or account
         if account then
-            accounts[account] = accounts[account] or {}
-            local key, value = line:match('^([%w%.]+)%s*=%s*(.-)%s*$')
-            if value then
-                value = value:match('^"(.*)"$') or value
-            end
-            if key == 'default' then
-                accounts[account].default = value == 'true'
-            elseif key == 'smtp.sasl.plain.username' then
-                accounts[account].email = value
-            end
+            update_account(accounts, account, line)
         end
     end
 
@@ -62,9 +66,9 @@ local function attachment_line(bufnr, attachment_index)
     for index = attachments_start + 1, #lines do
         if vim.startswith(lines[index], '  filename: ') then
             found = found + 1
-            if found == attachment_index then
-                return index
-            end
+        end
+        if found == attachment_index then
+            return index
         end
     end
 end
@@ -76,12 +80,13 @@ local function download_directory()
 
     local config_home = vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')
     local ok, lines = pcall(vim.fn.readfile, config_home .. '/user-dirs.dirs')
-    if ok then
-        for _, line in ipairs(lines) do
-            local directory = line:match('^XDG_DOWNLOAD_DIR="(.*)"$')
-            if directory then
-                return directory:gsub('%$HOME', vim.env.HOME)
-            end
+    if not ok then
+        return vim.env.HOME .. '/Downloads'
+    end
+    for _, line in ipairs(lines) do
+        local directory = line:match('^XDG_DOWNLOAD_DIR="(.*)"$')
+        if directory then
+            return directory:gsub('%$HOME', vim.env.HOME)
         end
     end
 
@@ -203,34 +208,52 @@ local function select_attachment(bufnr, mailbox, id, attachments)
     download_attachment(bufnr, mailbox, id, attachment_index, attachments[attachment_index])
 end
 
+local function handle_attachments(bufnr, mailbox, id, result)
+    if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+        return
+    end
+
+    local attachments = vim.json.decode(result.stdout).attachments
+    if #attachments == 0 then
+        return
+    end
+
+    local lines = { '', 'attachments:' }
+    for _, attachment in ipairs(attachments) do
+        vim.list_extend(lines, {
+            '  filename: ' .. (attachment.filename or ''),
+            '    mime: ' .. (attachment.mime or ''),
+            '    size: ' .. attachment.size,
+        })
+    end
+    local line_count = vim.api.nvim_buf_line_count(bufnr)
+    vim.api.nvim_buf_set_lines(bufnr, line_count, line_count, false, lines)
+
+    vim.keymap.set('n', '<CR>', function()
+        select_attachment(bufnr, mailbox, id, attachments)
+    end, { buffer = bufnr })
+end
+
 local function load_attachments(bufnr, mailbox, id)
     vim.system({ 'himalaya', 'attachment', 'list', '--mailbox', mailbox, '--json', id }, {}, function(result)
         vim.schedule(function()
-            if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
-                return
-            end
-
-            local attachments = vim.json.decode(result.stdout).attachments
-            if #attachments == 0 then
-                return
-            end
-
-            local lines = { '', 'attachments:' }
-            for _, attachment in ipairs(attachments) do
-                vim.list_extend(lines, {
-                    '  filename: ' .. (attachment.filename or ''),
-                    '    mime: ' .. (attachment.mime or ''),
-                    '    size: ' .. attachment.size,
-                })
-            end
-            local line_count = vim.api.nvim_buf_line_count(bufnr)
-            vim.api.nvim_buf_set_lines(bufnr, line_count, line_count, false, lines)
-
-            vim.keymap.set('n', '<CR>', function()
-                select_attachment(bufnr, mailbox, id, attachments)
-            end, { buffer = bufnr })
+            handle_attachments(bufnr, mailbox, id, result)
         end)
     end)
+end
+
+local function handle_message(bufnr, mailbox, id, result)
+    if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+        return
+    end
+
+    local lines = vim.split(result.stdout, '\n', { plain = true })
+    if lines[#lines] == '' then
+        table.remove(lines)
+    end
+
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+    load_attachments(bufnr, mailbox, tostring(id))
 end
 
 function M.open_message(mailbox, id, subject)
@@ -252,47 +275,43 @@ function M.open_message(mailbox, id, subject)
 
     vim.system({ 'himalaya', 'message', 'read', '--mailbox', mailbox, id }, {}, function(result)
         vim.schedule(function()
-            if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
-                return
-            end
-
-            local lines = vim.split(result.stdout, '\n', { plain = true })
-            if lines[#lines] == '' then
-                table.remove(lines)
-            end
-
-            if vim.api.nvim_buf_is_valid(bufnr) then
-                vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-                load_attachments(bufnr, mailbox, tostring(id))
-            end
+            handle_message(bufnr, mailbox, id, result)
         end)
     end)
+end
+
+local function open_selected_message(mailbox, envelope_ids, envelope_subjects)
+    local line = vim.fn.line('.')
+    M.open_message(mailbox, envelope_ids[line], envelope_subjects[line])
+end
+
+local function handle_mailbox(bufnr, mailbox, result)
+    if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+        return
+    end
+
+    local envelopes = vim.json.decode(result.stdout)
+    local lines = {}
+    local envelope_ids = {}
+    local envelope_subjects = {}
+    for _, envelope in ipairs(envelopes.envelopes) do
+        table.insert(lines, envelope.date .. ' ' .. envelope.subject)
+        table.insert(envelope_ids, envelope.id)
+        table.insert(envelope_subjects, envelope.subject)
+    end
+
+    vim.bo[bufnr].readonly = false
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+    vim.bo[bufnr].readonly = true
+    vim.keymap.set('n', '<CR>', function()
+        open_selected_message(mailbox, envelope_ids, envelope_subjects)
+    end, { buffer = bufnr })
 end
 
 local function load_mailbox(bufnr, mailbox)
     vim.system({ 'himalaya', 'envelope', 'list', '--mailbox', mailbox, '--json', '--page-size', '100' }, {}, function(result)
         vim.schedule(function()
-            if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
-                return
-            end
-
-            local envelopes = vim.json.decode(result.stdout)
-            local lines = {}
-            local envelope_ids = {}
-            local envelope_subjects = {}
-            for _, envelope in ipairs(envelopes.envelopes) do
-                table.insert(lines, envelope.date .. ' ' .. envelope.subject)
-                table.insert(envelope_ids, envelope.id)
-                table.insert(envelope_subjects, envelope.subject)
-            end
-
-            vim.bo[bufnr].readonly = false
-            vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-            vim.bo[bufnr].readonly = true
-            vim.keymap.set('n', '<CR>', function()
-                local line = vim.fn.line('.')
-                M.open_message(mailbox, envelope_ids[line], envelope_subjects[line])
-            end, { buffer = bufnr })
+            handle_mailbox(bufnr, mailbox, result)
         end)
     end)
 end
@@ -315,22 +334,26 @@ function M.open_mailbox(mailbox)
     load_mailbox(bufnr, mailbox)
 end
 
+local function handle_main_menu(bufnr, result)
+    if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+        return
+    end
+
+    local mailboxes = vim.json.decode(result.stdout)
+    local lines = {}
+    for _, mailbox in ipairs(mailboxes.mailboxes) do
+        table.insert(lines, mailbox.name)
+    end
+
+    vim.bo[bufnr].readonly = false
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+    vim.bo[bufnr].readonly = true
+end
+
 local function load_main_menu(bufnr)
     vim.system({ 'himalaya', 'mailbox', 'list', '--json' }, {}, function(result)
         vim.schedule(function()
-            if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
-                return
-            end
-
-            local mailboxes = vim.json.decode(result.stdout)
-            local lines = {}
-            for _, mailbox in ipairs(mailboxes.mailboxes) do
-                table.insert(lines, mailbox.name)
-            end
-
-            vim.bo[bufnr].readonly = false
-            vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-            vim.bo[bufnr].readonly = true
+            handle_main_menu(bufnr, result)
         end)
     end)
 end
