@@ -1,8 +1,9 @@
 FROM archlinux
 
 RUN pacman -Syu --noconfirm \
-    cocogitto \
+    clamav \
     cloc \
+    cocogitto \
     curl \
     git \
     himalaya \
