@@ -28,16 +28,9 @@ local function replace_readonly_buffer_lines(bufnr, lines)
     vim.bo[bufnr].readonly = true
 end
 
-local function parse_account_setting(line)
-    local key, value = line:match('^([%w%.]+)%s*=%s*(.-)%s*$')
-    if value then
-        value = value:match('^"(.*)"$') or value
-    end
-    if key == 'default' then
-        return 'default', value == 'true'
-    elseif key == 'smtp.sasl.plain.username' then
-        return 'email', value
-    end
+local function parse_config_value(line)
+    local value = line:match('=%s*(.-)%s*$')
+    return value and (value:match('^"(.*)"$') or value)
 end
 
 local function find_default_account_email()
@@ -47,21 +40,23 @@ local function find_default_account_email()
         return
     end
 
-    local accounts = {}
-    local account
+    local email
+    local is_default = false
     for _, line in ipairs(lines) do
-        account = line:match('^%[accounts%.([^%]]+)%]$') or account
-        local setting, value = parse_account_setting(line)
-        if account and setting then
-            accounts[account] = accounts[account] or {}
-            accounts[account][setting] = value
+        if line:match('^%[accounts%.') and is_default then
+            return email
+        elseif line:match('^%[accounts%.') then
+            email = nil
+            is_default = false
+        elseif line:match('^default%s*=') then
+            is_default = parse_config_value(line) == 'true'
+        elseif line:match('^smtp%.sasl%.plain%.username%s*=') then
+            email = parse_config_value(line)
         end
     end
 
-    for _, details in pairs(accounts) do
-        if details.default then
-            return details.email
-        end
+    if is_default then
+        return email
     end
 end
 
