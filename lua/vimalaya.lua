@@ -49,7 +49,7 @@ function M.open_new_message()
     vim.api.nvim_set_current_buf(bufnr)
 end
 
-local function attachment_line(bufnr, attachment_index)
+local function find_attachment_line(bufnr, attachment_index)
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local attachments_start
     for index = #lines, 1, -1 do
@@ -107,7 +107,7 @@ local function finish_attachment_download(bufnr, attachment_index, attachment, d
     if not vim.api.nvim_buf_is_valid(bufnr) then
         return
     end
-    local line = attachment_line(bufnr, attachment_index)
+    local line = find_attachment_line(bufnr, attachment_index)
     if not line then
         return
     end
@@ -190,7 +190,7 @@ end
 local function attachment_at_cursor(bufnr, attachments)
     local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
     for index = 1, #attachments do
-        if attachment_line(bufnr, index) == cursor_line then
+        if find_attachment_line(bufnr, index) == cursor_line then
             return index
         end
     end
