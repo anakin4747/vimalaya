@@ -7,6 +7,7 @@ local after_each = busted.after_each
 
 describe(":Mail", function()
     local executable
+    local himalaya_mocks
     local notify
     local system
 
@@ -14,28 +15,37 @@ describe(":Mail", function()
         executable = vim.fn.executable
         notify = vim.notify
         system = vim.system
+        himalaya_mocks = {
+            ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
+            ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
+            ['himalaya message read --mailbox Inbox 1'] = 'tests/message.txt',
+            ['himalaya message read --mailbox Inbox 2'] = 'tests/message.txt',
+            ['himalaya attachment list --mailbox Inbox --json 1'] = 'tests/attachments-empty.json',
+            ['himalaya attachment list --mailbox Inbox --json 2'] = 'tests/attachments.json',
+            ['himalaya attachment download --mailbox Inbox --json 2 1'] = 'tests/attachment-download.json',
+            ['himalaya message compose'] = 'tests/send-suceeded.txt',
+        }
         vim.system = function(command, _, callback)
-            local fixtures = {
-                ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
-                ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
-                ['himalaya message read --mailbox Inbox 1'] = 'tests/message.txt',
-                ['himalaya message read --mailbox Inbox 2'] = 'tests/message.txt',
-                ['himalaya attachment list --mailbox Inbox --json 1'] = 'tests/attachments-empty.json',
-                ['himalaya attachment list --mailbox Inbox --json 2'] = 'tests/attachments.json',
-                ['himalaya attachment download --mailbox Inbox --json 2 1'] = 'tests/attachment-download.json',
-            }
-            local fixture = fixtures[table.concat(command, ' ')]
+            local command_string = table.concat(command, ' ')
+            local mock = himalaya_mocks[command_string]
             if command[1] == 'himalaya' and command[2] == 'message' and command[3] == 'compose' then
-                fixture = 'tests/send-suceeded.txt'
+                mock = mock or himalaya_mocks['himalaya message compose']
             end
-            assert.is_not_nil(fixture, 'unexpected command: ' .. table.concat(command, ' '))
+            assert.is_not_nil(mock, 'unexpected command: ' .. command_string)
+
+            local result
+            if type(mock) == 'function' then
+                result = mock(command)
+            else
+                result = {
+                    code = 0,
+                    stdout = table.concat(vim.fn.readfile(mock), '\n'),
+                    stderr = '',
+                }
+            end
 
             vim.schedule(function()
-                callback({
-                    code = 0,
-                    stdout = table.concat(vim.fn.readfile(fixture), '\n'),
-                    stderr = '',
-                })
+                callback(result)
             end)
         end
 
@@ -795,11 +805,9 @@ describe(":Mail", function()
             '',
             'Example body.',
         })
-        vim.system = function(args, _, callback)
+        himalaya_mocks['himalaya message compose'] = function(args)
             command = args
-            vim.schedule(function()
-                callback({ code = 0, stdout = 'Message successfully sent\n', stderr = '' })
-            end)
+            return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
         end
 
         vim.cmd('Mail send')
@@ -822,15 +830,13 @@ describe(":Mail", function()
         local command
         open_first_message()
         vim.cmd('Mail reply')
-        vim.system = function(args, _, callback)
+        himalaya_mocks['himalaya message compose'] = function(args)
             command = args
-            vim.schedule(function()
-                callback({
-                    code = 1,
-                    stdout = 'Himalaya stdout\n',
-                    stderr = 'Himalaya stderr\n',
-                })
-            end)
+            return {
+                code = 1,
+                stdout = 'Himalaya stdout\n',
+                stderr = 'Himalaya stderr\n',
+            }
         end
         vim.notify = function(notification)
             message = notification
@@ -852,11 +858,9 @@ describe(":Mail", function()
         open_first_message()
         vim.cmd('Mail reply')
         vim.api.nvim_buf_set_lines(0, -2, -2, false, { 'attach: /bin/bash' })
-        vim.system = function(args, _, callback)
+        himalaya_mocks['himalaya message compose'] = function(args)
             command = args
-            vim.schedule(function()
-                callback({ code = 0, stdout = 'Message successfully sent\n', stderr = '' })
-            end)
+            return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
         end
 
         vim.cmd('Mail send')
@@ -893,11 +897,9 @@ describe(":Mail", function()
             '',
             'Thanks.',
         })
-        vim.system = function(args, _, callback)
+        himalaya_mocks['himalaya message compose'] = function(args)
             command = args
-            vim.schedule(function()
-                callback({ code = 0, stdout = 'Message successfully sent\n', stderr = '' })
-            end)
+            return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
         end
 
         vim.cmd('Mail send')
@@ -1050,10 +1052,8 @@ describe(":Mail", function()
         open_first_message()
         local original = vim.api.nvim_buf_get_lines(0, 0, -1, false)
         vim.cmd('Mail ' .. kind)
-        vim.system = function(_, _, callback)
-            vim.schedule(function()
-                callback({ code = 0, stdout = 'Message successfully sent\n', stderr = '' })
-            end)
+        himalaya_mocks['himalaya message compose'] = function()
+            return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
         end
 
         vim.cmd('Mail send')
