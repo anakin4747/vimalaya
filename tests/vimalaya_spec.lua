@@ -19,6 +19,10 @@ describe(":Mail", function()
                 ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
                 ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
                 ['himalaya message read --mailbox Inbox 1'] = 'tests/message.txt',
+                ['himalaya message read --mailbox Inbox 2'] = 'tests/message.txt',
+                ['himalaya attachment list --mailbox Inbox --json 1'] = 'tests/attachments-empty.json',
+                ['himalaya attachment list --mailbox Inbox --json 2'] = 'tests/attachments.json',
+                ['himalaya attachment download --mailbox Inbox --json 2 1'] = 'tests/attachment-download.json',
             }
             local fixture = fixtures[table.concat(command, ' ')]
             if command[1] == 'himalaya' and command[2] == 'message' and command[3] == 'compose' then
@@ -547,6 +551,38 @@ describe(":Mail", function()
         end))
 
         assert.is_false(vim.bo.readonly)
+    end)
+
+    local function open_message_with_attachments()
+        require('vimalaya').open_message('Inbox', '2', 'Message with attachments')
+        assert.is_true(vim.wait(1000, function()
+            return vim.tbl_contains(vim.api.nvim_buf_get_lines(0, 0, -1, false), 'attachments:')
+        end))
+    end
+
+    it("lists attachments at the bottom of email buffers", function()
+        open_message_with_attachments()
+
+        assert.same({
+            'attachments:',
+            '  filename: invite.ics',
+            '    mime: text/calendar',
+            '    size: 842',
+            '  filename: agenda.pdf',
+            '    mime: application/pdf',
+            '    size: 839',
+        }, vim.api.nvim_buf_get_lines(0, 9, -1, false))
+    end)
+
+    it("displays the path of a downloaded attachment", function()
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_get_current_line() == '  filename: invite.ics /tmp/downloads/invite.ics'
+        end))
     end)
 
     it("restores an email after deleting its buffer", function()

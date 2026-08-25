@@ -45,6 +45,89 @@ function M.open_new_message()
     vim.api.nvim_set_current_buf(bufnr)
 end
 
+local function attachment_line(bufnr, attachment_index)
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local attachments_start
+    for index = #lines, 1, -1 do
+        if lines[index] == 'attachments:' then
+            attachments_start = index
+            break
+        end
+    end
+    if not attachments_start then
+        return
+    end
+
+    local found = 0
+    for index = attachments_start + 1, #lines do
+        if vim.startswith(lines[index], '  filename: ') then
+            found = found + 1
+            if found == attachment_index then
+                return index
+            end
+        end
+    end
+end
+
+local function load_attachments(bufnr, mailbox, id)
+    vim.system({ 'himalaya', 'attachment', 'list', '--mailbox', mailbox, '--json', id }, {}, function(result)
+        vim.schedule(function()
+            if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+                return
+            end
+
+            local attachments = vim.json.decode(result.stdout).attachments
+            if #attachments == 0 then
+                return
+            end
+
+            local lines = { '', 'attachments:' }
+            for _, attachment in ipairs(attachments) do
+                vim.list_extend(lines, {
+                    '  filename: ' .. (attachment.filename or ''),
+                    '    mime: ' .. (attachment.mime or ''),
+                    '    size: ' .. attachment.size,
+                })
+            end
+            local line_count = vim.api.nvim_buf_line_count(bufnr)
+            vim.api.nvim_buf_set_lines(bufnr, line_count, line_count, false, lines)
+
+            vim.keymap.set('n', '<CR>', function()
+                local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
+                local attachment_index
+                for index = 1, #attachments do
+                    if attachment_line(bufnr, index) == cursor_line then
+                        attachment_index = index
+                        break
+                    end
+                end
+                if not attachment_index then
+                    return
+                end
+
+                local attachment = attachments[attachment_index]
+                vim.system({
+                    'himalaya', 'attachment', 'download', '--mailbox', mailbox, '--json', id, attachment.id,
+                }, {}, function(download_result)
+                    vim.schedule(function()
+                        if download_result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+                            return
+                        end
+
+                        local downloaded = vim.json.decode(download_result.stdout).attachments[1]
+                        local line = attachment_line(bufnr, attachment_index)
+                        if downloaded and downloaded.path and line then
+                            vim.api.nvim_buf_set_lines(bufnr, line - 1, line, false, {
+                                '  filename: ' .. (attachment.filename or '') .. ' ' .. downloaded.path,
+                            })
+                        end
+                    end)
+                end)
+            end, { buffer = bufnr })
+        end)
+    end)
+end
+
 function M.open_message(mailbox, id, subject)
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
         local has_mailbox, message_mailbox = pcall(vim.api.nvim_buf_get_var, bufnr, "vimalaya_message_mailbox")
@@ -75,6 +158,7 @@ function M.open_message(mailbox, id, subject)
 
             if vim.api.nvim_buf_is_valid(bufnr) then
                 vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+                load_attachments(bufnr, mailbox, tostring(id))
             end
         end)
     end)
