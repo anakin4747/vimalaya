@@ -155,3 +155,51 @@ Suggestions:
 E492: Not an editor command: Mess
 ```
 
+---
+
+clamav for scanning attachments for viruses
+
+---
+
+start with a new email or reply with the following:
+
+    attach: /path/to/file
+
+Then append:
+
+    attach: /path/to/file.tar.gz
+
+Then write the buffer with `:w`
+
+Now vimalaya should make the compressed archive.
+
+Once the archive is created vimalaya should have a way to refresh the
+highlighting of the buffer
+
+---
+
+have red syntax highlighting for `attach:` lines with a file that does not
+exist. This will pair nicely with the automatic creation of archives since as
+soon as the buffer changes with the .tar.gz the syntax highlighting will be
+red. Then on write we know that the archive is successfully created if the red
+highlighting goes away.
+
+---
+
+Maybe move reply's and forwards to use :Mail new instead of reusing the same
+buffer???
+
+---
+
+when downloading attachments run clamscan on them
+
+---
+
+Before downloading an attachment first check if clamscan is available, if it is
+not emit a friendly warning to the user that clamav anitvirus is not installed
+so attachments can not be downloaded. This error message should be similar in
+style and spirit to the error if himalaya is not installed.
+
+---
+
+At main menu allow selecting the accounts first
