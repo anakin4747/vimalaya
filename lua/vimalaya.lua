@@ -106,11 +106,19 @@ local function load_attachments(bufnr, mailbox, id)
                 end
 
                 local attachment = attachments[attachment_index]
-                vim.system({
+                local command = {
                     'himalaya', 'attachment', 'download', '--mailbox', mailbox, '--json', id, attachment.id,
-                }, {}, function(download_result)
+                }
+                vim.system(command, {}, function(download_result)
                     vim.schedule(function()
-                        if download_result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+                        if download_result.code ~= 0 then
+                            vim.notify(
+                                table.concat(command, ' ') .. '\n' .. download_result.stdout .. download_result.stderr,
+                                vim.log.levels.ERROR
+                            )
+                            return
+                        end
+                        if not vim.api.nvim_buf_is_valid(bufnr) then
                             return
                         end
 

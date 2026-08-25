@@ -595,6 +595,69 @@ describe(":Mail", function()
         end))
     end)
 
+    it("downloads an attachment", function()
+        local path = vim.fn.tempname() .. '.ics'
+        himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function()
+            vim.fn.writefile(vim.fn.readfile('tests/invite.ics', 'b'), path, 'b')
+            return {
+                code = 0,
+                stdout = vim.json.encode({ attachments = { { path = path } } }),
+                stderr = '',
+            }
+        end
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.fn.filereadable(path) == 1
+        end))
+        assert.same(vim.fn.readfile('tests/invite.ics', 'b'), vim.fn.readfile(path, 'b'))
+        vim.fn.delete(path)
+    end)
+
+    it("does not display an attachment path when downloading fails", function()
+        local finished = false
+        himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function()
+            return { code = 1, stdout = 'Himalaya stdout\n', stderr = 'Himalaya stderr\n' }
+        end
+        vim.notify = function()
+            finished = true
+        end
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+        assert.is_true(vim.wait(1000, function()
+            return finished
+        end))
+
+        assert.equal('  filename: invite.ics', vim.api.nvim_get_current_line())
+    end)
+
+    it("reports the failed attachment download command, stdout, and stderr", function()
+        local message
+        himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function()
+            return { code = 1, stdout = 'Himalaya stdout\n', stderr = 'Himalaya stderr\n' }
+        end
+        vim.notify = function(notification)
+            message = notification
+        end
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return message ~= nil
+        end))
+        assert.equal(
+            'himalaya attachment download --mailbox Inbox --json 2 1\nHimalaya stdout\nHimalaya stderr\n',
+            message
+        )
+    end)
+
     it("restores an email after deleting its buffer", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()

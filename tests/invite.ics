@@ -1,0 +1,8 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Vimalaya//Attachment Test//EN
+BEGIN:VEVENT
+UID:vimalaya-attachment@example.test
+SUMMARY:Vimalaya attachment test
+END:VEVENT
+END:VCALENDAR
