@@ -456,21 +456,24 @@ function M.append_response_form(kind)
 
         local name, value = line:match('^([^:]+):%s*(.*)$')
         if name then
-            headers[name:lower()] = value
+            name = name:lower()
+            headers[name] = headers[name] or {}
+            table.insert(headers[name], value)
         end
     end
 
     local action = response_actions[kind]
-    vim.api.nvim_buf_set_lines(0, -1, -1, false, {
-        '',
-        '',
-        '--- ' .. action.title .. ' ---',
-        'to: ' .. (headers.from or ''),
-        'cc: ' .. (headers.cc or ''),
-        'bcc: ',
-        'subject: ' .. action.subject .. (headers.subject or ''),
-        '',
-    })
+    local form = { '', '', '--- ' .. action.title .. ' ---' }
+    for _, value in ipairs(headers.from or { '' }) do
+        table.insert(form, 'to: ' .. value)
+    end
+    for _, value in ipairs(headers.cc or { '' }) do
+        table.insert(form, 'cc: ' .. value)
+    end
+    table.insert(form, 'bcc: ')
+    table.insert(form, 'subject: ' .. action.subject .. ((headers.subject or {})[1] or ''))
+    table.insert(form, '')
+    vim.api.nvim_buf_set_lines(0, -1, -1, false, form)
     last_compose_bufnr = vim.api.nvim_get_current_buf()
 end
 

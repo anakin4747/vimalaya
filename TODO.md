@@ -158,3 +158,8 @@ buffer???
 ---
 
 At main menu allow selecting the accounts first
+
+---
+
+Reply, replyall, and forward all handle the fact that names are often before
+emails and that the names must not be passed to himalaya commands

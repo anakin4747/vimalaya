@@ -904,6 +904,25 @@ describe(":Mail", function()
         }, vim.api.nvim_buf_get_lines(0, -9, -1, false))
     end)
 
+    it("reply expands multiple source Cc headers into separate cc lines", function()
+        open_first_message()
+        vim.api.nvim_buf_set_lines(0, 3, 3, false, { 'Cc: Second Copy <second-copy@example.test>' })
+
+        vim.cmd('Mail reply')
+
+        assert.same({
+            '',
+            '',
+            '--- Reply ---',
+            'to: Example Sender <sender@example.test>',
+            'cc: Example Copy <copy@example.test>',
+            'cc: Second Copy <second-copy@example.test>',
+            'bcc: ',
+            'subject: Re: First example message',
+            '',
+        }, vim.api.nvim_buf_get_lines(0, -10, -1, false))
+    end)
+
     it("send sends responses to their To, Cc, and Bcc recipients", function()
         local message
         open_first_message()
