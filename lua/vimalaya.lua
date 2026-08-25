@@ -119,17 +119,7 @@ local function resolve_download_directory()
     return vim.env.HOME .. '/Downloads'
 end
 
-local function move_attachment_to_downloads_and_display_path(download)
-    local destination_dir = resolve_download_directory()
-    vim.fn.mkdir(destination_dir, 'p')
-    local destination = destination_dir .. '/' .. vim.fn.fnamemodify(download.downloaded.path, ':t')
-    if vim.fn.rename(download.downloaded.path, destination) ~= 0 then
-        vim.fn.delete(download.temporary_dir, 'rf')
-        vim.notify('Could not move attachment to ' .. destination, vim.log.levels.ERROR)
-        return
-    end
-    vim.fn.delete(download.temporary_dir, 'rf')
-
+local function display_downloaded_attachment_path(download, destination)
     if not vim.api.nvim_buf_is_valid(download.bufnr) then
         return
     end
@@ -142,9 +132,22 @@ local function move_attachment_to_downloads_and_display_path(download)
     })
 end
 
+local function move_attachment_to_downloads(download)
+    local destination_dir = resolve_download_directory()
+    vim.fn.mkdir(destination_dir, 'p')
+    local destination = destination_dir .. '/' .. vim.fn.fnamemodify(download.downloaded.path, ':t')
+    if vim.fn.rename(download.downloaded.path, destination) ~= 0 then
+        vim.fn.delete(download.temporary_dir, 'rf')
+        vim.notify('Could not move attachment to ' .. destination, vim.log.levels.ERROR)
+        return
+    end
+    vim.fn.delete(download.temporary_dir, 'rf')
+    display_downloaded_attachment_path(download, destination)
+end
+
 local function process_attachment_scan_result(download, scan_result)
     if scan_result.code == 0 then
-        move_attachment_to_downloads_and_display_path(download)
+        move_attachment_to_downloads(download)
         return
     end
 
@@ -227,16 +230,7 @@ local function download_attachment_at_cursor(message, attachments)
     })
 end
 
-local function display_attachments_and_enable_downloads(message, result)
-    if result.code ~= 0 or not vim.api.nvim_buf_is_valid(message.bufnr) then
-        return
-    end
-
-    local attachments = vim.json.decode(result.stdout).attachments
-    if #attachments == 0 then
-        return
-    end
-
+local function display_attachments(bufnr, attachments)
     local lines = { '', 'attachments:' }
     for _, attachment in ipairs(attachments) do
         vim.list_extend(lines, {
@@ -245,26 +239,41 @@ local function display_attachments_and_enable_downloads(message, result)
             '    size: ' .. attachment.size,
         })
     end
-    local line_count = vim.api.nvim_buf_line_count(message.bufnr)
-    vim.api.nvim_buf_set_lines(message.bufnr, line_count, line_count, false, lines)
+    local line_count = vim.api.nvim_buf_line_count(bufnr)
+    vim.api.nvim_buf_set_lines(bufnr, line_count, line_count, false, lines)
+end
 
+local function enable_attachment_downloads(message, attachments)
     vim.keymap.set('n', '<CR>', function()
         download_attachment_at_cursor(message, attachments)
     end, { buffer = message.bufnr })
+end
+
+local function process_attachment_list_result(message, result)
+    if result.code ~= 0 or not vim.api.nvim_buf_is_valid(message.bufnr) then
+        return
+    end
+
+    local attachments = vim.json.decode(result.stdout).attachments
+    if #attachments == 0 then
+        return
+    end
+    display_attachments(message.bufnr, attachments)
+    enable_attachment_downloads(message, attachments)
 end
 
 local function request_attachment_list(message)
     local command = { 'himalaya', 'attachment', 'list', '--mailbox', message.mailbox, '--json', message.id }
     vim.system(command, {}, function(result)
         vim.schedule(function()
-            display_attachments_and_enable_downloads(message, result)
+            process_attachment_list_result(message, result)
         end)
     end)
 end
 
-local function display_message_and_request_attachments(message, result)
+local function display_message(message, result)
     if result.code ~= 0 or not vim.api.nvim_buf_is_valid(message.bufnr) then
-        return
+        return false
     end
 
     local lines = vim.split(result.stdout, '\n', { plain = true })
@@ -273,6 +282,13 @@ local function display_message_and_request_attachments(message, result)
     end
 
     vim.api.nvim_buf_set_lines(message.bufnr, 0, -1, false, lines)
+    return true
+end
+
+local function process_message_read_result(message, result)
+    if not display_message(message, result) then
+        return
+    end
     request_attachment_list(message)
 end
 
@@ -296,7 +312,7 @@ function M.open_message(mailbox, id, subject)
     local message = { bufnr = bufnr, mailbox = mailbox, id = tostring(id) }
     vim.system({ 'himalaya', 'message', 'read', '--mailbox', mailbox, id }, {}, function(result)
         vim.schedule(function()
-            display_message_and_request_attachments(message, result)
+            process_message_read_result(message, result)
         end)
     end)
 end
@@ -307,27 +323,34 @@ local function open_message_at_cursor(mailbox, envelopes)
     M.open_message(mailbox, envelope.id, envelope.subject)
 end
 
-local function display_envelopes_and_enable_opening(bufnr, mailbox, result)
+local function display_envelopes(bufnr, envelopes)
+    local lines = {}
+    for _, envelope in ipairs(envelopes) do
+        table.insert(lines, envelope.date .. ' ' .. envelope.subject)
+    end
+    replace_readonly_buffer_lines(bufnr, lines)
+end
+
+local function enable_message_opening(bufnr, mailbox, envelopes)
+    vim.keymap.set('n', '<CR>', function()
+        open_message_at_cursor(mailbox, envelopes)
+    end, { buffer = bufnr })
+end
+
+local function process_envelope_list_result(bufnr, mailbox, result)
     if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
         return
     end
 
     local envelopes = vim.json.decode(result.stdout)
-    local lines = {}
-    for _, envelope in ipairs(envelopes.envelopes) do
-        table.insert(lines, envelope.date .. ' ' .. envelope.subject)
-    end
-
-    replace_readonly_buffer_lines(bufnr, lines)
-    vim.keymap.set('n', '<CR>', function()
-        open_message_at_cursor(mailbox, envelopes.envelopes)
-    end, { buffer = bufnr })
+    display_envelopes(bufnr, envelopes.envelopes)
+    enable_message_opening(bufnr, mailbox, envelopes.envelopes)
 end
 
 local function request_envelope_list(bufnr, mailbox)
     vim.system({ 'himalaya', 'envelope', 'list', '--mailbox', mailbox, '--json', '--page-size', '100' }, {}, function(result)
         vim.schedule(function()
-            display_envelopes_and_enable_opening(bufnr, mailbox, result)
+            process_envelope_list_result(bufnr, mailbox, result)
         end)
     end)
 end
