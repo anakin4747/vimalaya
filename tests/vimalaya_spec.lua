@@ -8,13 +8,23 @@ local after_each = busted.after_each
 describe(":Mail", function()
     local executable
     local himalaya_mocks
+    local clamscan_mock
+    local download_dir
     local notify
     local system
+    local xdg_download_dir
 
     before_each(function()
         executable = vim.fn.executable
         notify = vim.notify
         system = vim.system
+        xdg_download_dir = vim.env.XDG_DOWNLOAD_DIR
+        download_dir = vim.fn.tempname()
+        vim.fn.mkdir(download_dir, 'p')
+        vim.env.XDG_DOWNLOAD_DIR = download_dir
+        clamscan_mock = function()
+            return { code = 0, stdout = '', stderr = '' }
+        end
         himalaya_mocks = {
             ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
             ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
@@ -22,12 +32,37 @@ describe(":Mail", function()
             ['himalaya message read --mailbox Inbox 2'] = 'tests/message.txt',
             ['himalaya attachment list --mailbox Inbox --json 1'] = 'tests/attachments-empty.json',
             ['himalaya attachment list --mailbox Inbox --json 2'] = 'tests/attachments.json',
-            ['himalaya attachment download --mailbox Inbox --json 2 1'] = 'tests/attachment-download.json',
+            ['himalaya attachment download --mailbox Inbox --json 2 1'] = function(command)
+                local temporary_dir = download_dir
+                for index, argument in ipairs(command) do
+                    if argument == '--dir' then
+                        temporary_dir = command[index + 1]
+                    end
+                end
+                local path = temporary_dir .. '/invite.ics'
+                vim.fn.writefile(vim.fn.readfile('tests/invite.ics', 'b'), path, 'b')
+                return {
+                    code = 0,
+                    stdout = vim.json.encode({ attachments = { { path = path } } }),
+                    stderr = '',
+                }
+            end,
             ['himalaya message compose'] = 'tests/send-suceeded.txt',
         }
         vim.system = function(command, _, callback)
             local command_string = table.concat(command, ' ')
-            local mock = himalaya_mocks[command_string]
+            local lookup_command = vim.deepcopy(command)
+            if command[1] == 'himalaya' and command[2] == 'attachment' and command[3] == 'download' then
+                for index, argument in ipairs(lookup_command) do
+                    if argument == '--dir' then
+                        table.remove(lookup_command, index)
+                        table.remove(lookup_command, index)
+                        break
+                    end
+                end
+            end
+            local mock = command[1] == 'clamscan' and clamscan_mock
+                or himalaya_mocks[table.concat(lookup_command, ' ')]
             if command[1] == 'himalaya' and command[2] == 'message' and command[3] == 'compose' then
                 mock = mock or himalaya_mocks['himalaya message compose']
             end
@@ -59,6 +94,8 @@ describe(":Mail", function()
         vim.fn.executable = executable
         vim.notify = notify
         vim.system = system
+        vim.env.XDG_DOWNLOAD_DIR = xdg_download_dir
+        vim.fn.delete(download_dir, 'rf')
     end)
 
     it("does not error", function()
@@ -591,17 +628,24 @@ describe(":Mail", function()
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
 
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_get_current_line() == '  filename: invite.ics /tmp/downloads/invite.ics'
+            return vim.api.nvim_get_current_line() == '  filename: invite.ics ' .. download_dir .. '/invite.ics'
         end))
     end)
 
     it("downloads an attachment", function()
-        local path = vim.fn.tempname() .. '.ics'
-        himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function()
-            vim.fn.writefile(vim.fn.readfile('tests/invite.ics', 'b'), path, 'b')
+        local temporary_path
+        himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function(command)
+            local temporary_dir = download_dir
+            for index, argument in ipairs(command) do
+                if argument == '--dir' then
+                    temporary_dir = command[index + 1]
+                end
+            end
+            temporary_path = temporary_dir .. '/invite.ics'
+            vim.fn.writefile(vim.fn.readfile('tests/invite.ics', 'b'), temporary_path, 'b')
             return {
                 code = 0,
-                stdout = vim.json.encode({ attachments = { { path = path } } }),
+                stdout = vim.json.encode({ attachments = { { path = temporary_path } } }),
                 stderr = '',
             }
         end
@@ -611,10 +655,60 @@ describe(":Mail", function()
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
 
         assert.is_true(vim.wait(1000, function()
-            return vim.fn.filereadable(path) == 1
+            return vim.fn.filereadable(download_dir .. '/invite.ics') == 1
         end))
-        assert.same(vim.fn.readfile('tests/invite.ics', 'b'), vim.fn.readfile(path, 'b'))
-        vim.fn.delete(path)
+        assert.same(vim.fn.readfile('tests/invite.ics', 'b'), vim.fn.readfile(download_dir .. '/invite.ics', 'b'))
+    end)
+
+    it("scans downloaded attachments with ClamAV", function()
+        local scanned_path
+        clamscan_mock = function(command)
+            scanned_path = command[2]
+            return { code = 0, stdout = '', stderr = '' }
+        end
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return scanned_path ~= nil
+        end))
+        assert.is_true(vim.endswith(scanned_path, '/invite.ics'))
+        assert.is_false(vim.startswith(scanned_path, download_dir))
+    end)
+
+    it("deletes attachments when ClamAV detects a virus", function()
+        local infected_path
+        clamscan_mock = function(command)
+            infected_path = command[2]
+            return { code = 1, stdout = 'Eicar-Test-Signature FOUND\n', stderr = '' }
+        end
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return infected_path ~= nil and vim.fn.filereadable(infected_path) == 0
+        end))
+    end)
+
+    it("does not display a download path when ClamAV detects a virus", function()
+        local scanned = false
+        clamscan_mock = function()
+            scanned = true
+            return { code = 1, stdout = 'Eicar-Test-Signature FOUND\n', stderr = '' }
+        end
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+        assert.is_true(vim.wait(1000, function()
+            return scanned
+        end))
+
+        assert.equal('  filename: invite.ics', vim.api.nvim_get_current_line())
     end)
 
     it("warns when ClamAV is not installed instead of downloading attachments", function()
@@ -654,7 +748,9 @@ describe(":Mail", function()
 
     it("reports the failed attachment download command, stdout, and stderr", function()
         local message
-        himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function()
+        local command
+        himalaya_mocks['himalaya attachment download --mailbox Inbox --json 2 1'] = function(args)
+            command = args
             return { code = 1, stdout = 'Himalaya stdout\n', stderr = 'Himalaya stderr\n' }
         end
         vim.notify = function(notification)
@@ -669,7 +765,7 @@ describe(":Mail", function()
             return message ~= nil
         end))
         assert.equal(
-            'himalaya attachment download --mailbox Inbox --json 2 1\nHimalaya stdout\nHimalaya stderr\n',
+            table.concat(command, ' ') .. '\nHimalaya stdout\nHimalaya stderr\n',
             message
         )
     end)

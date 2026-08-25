@@ -69,6 +69,25 @@ local function attachment_line(bufnr, attachment_index)
     end
 end
 
+local function download_directory()
+    if vim.env.XDG_DOWNLOAD_DIR then
+        return vim.fn.expand(vim.env.XDG_DOWNLOAD_DIR)
+    end
+
+    local config_home = vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')
+    local ok, lines = pcall(vim.fn.readfile, config_home .. '/user-dirs.dirs')
+    if ok then
+        for _, line in ipairs(lines) do
+            local directory = line:match('^XDG_DOWNLOAD_DIR="(.*)"$')
+            if directory then
+                return directory:gsub('%$HOME', vim.env.HOME)
+            end
+        end
+    end
+
+    return vim.env.HOME .. '/Downloads'
+end
+
 local function load_attachments(bufnr, mailbox, id)
     vim.system({ 'himalaya', 'attachment', 'list', '--mailbox', mailbox, '--json', id }, {}, function(result)
         vim.schedule(function()
@@ -113,12 +132,16 @@ local function load_attachments(bufnr, mailbox, id)
                 end
 
                 local attachment = attachments[attachment_index]
+                local temporary_dir = vim.fn.tempname()
+                vim.fn.mkdir(temporary_dir, 'p')
                 local command = {
                     'himalaya', 'attachment', 'download', '--mailbox', mailbox, '--json', id, attachment.id,
+                    '--dir', temporary_dir,
                 }
                 vim.system(command, {}, function(download_result)
                     vim.schedule(function()
                         if download_result.code ~= 0 then
+                            vim.fn.delete(temporary_dir, 'rf')
                             vim.notify(
                                 table.concat(command, ' ') .. '\n' .. download_result.stdout .. download_result.stderr,
                                 vim.log.levels.ERROR
@@ -130,12 +153,47 @@ local function load_attachments(bufnr, mailbox, id)
                         end
 
                         local downloaded = vim.json.decode(download_result.stdout).attachments[1]
-                        local line = attachment_line(bufnr, attachment_index)
-                        if downloaded and downloaded.path and line then
-                            vim.api.nvim_buf_set_lines(bufnr, line - 1, line, false, {
-                                '  filename: ' .. (attachment.filename or '') .. ' ' .. downloaded.path,
-                            })
+                        if not downloaded or not downloaded.path then
+                            vim.fn.delete(temporary_dir, 'rf')
+                            return
                         end
+
+                        vim.system({ 'clamscan', downloaded.path }, {}, function(scan_result)
+                            vim.schedule(function()
+                                if scan_result.code ~= 0 then
+                                    vim.fn.delete(temporary_dir, 'rf')
+                                    if scan_result.code == 1 then
+                                        vim.notify('ClamAV detected a virus; attachment was deleted', vim.log.levels.ERROR)
+                                    else
+                                        vim.notify(
+                                            'ClamAV could not scan the attachment; attachment was deleted',
+                                            vim.log.levels.ERROR
+                                        )
+                                    end
+                                    return
+                                end
+
+                                local destination_dir = download_directory()
+                                vim.fn.mkdir(destination_dir, 'p')
+                                local destination = destination_dir .. '/' .. vim.fn.fnamemodify(downloaded.path, ':t')
+                                if vim.fn.rename(downloaded.path, destination) ~= 0 then
+                                    vim.fn.delete(temporary_dir, 'rf')
+                                    vim.notify('Could not move attachment to ' .. destination, vim.log.levels.ERROR)
+                                    return
+                                end
+                                vim.fn.delete(temporary_dir, 'rf')
+
+                                if not vim.api.nvim_buf_is_valid(bufnr) then
+                                    return
+                                end
+                                local line = attachment_line(bufnr, attachment_index)
+                                if line then
+                                    vim.api.nvim_buf_set_lines(bufnr, line - 1, line, false, {
+                                        '  filename: ' .. (attachment.filename or '') .. ' ' .. destination,
+                                    })
+                                end
+                            end)
+                        end)
                     end)
                 end)
             end, { buffer = bufnr })

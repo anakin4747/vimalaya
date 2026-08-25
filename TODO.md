@@ -127,10 +127,6 @@ E492: Not an editor command: Mess
 
 ---
 
-clamav for scanning attachments for viruses
-
----
-
 start with a new email or reply with the following:
 
     attach: /path/to/file
@@ -158,10 +154,6 @@ highlighting goes away.
 
 Maybe move reply's and forwards to use :Mail new instead of reusing the same
 buffer???
-
----
-
-when downloading attachments run clamscan on them
 
 ---
 
