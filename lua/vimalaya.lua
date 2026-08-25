@@ -88,6 +88,121 @@ local function download_directory()
     return vim.env.HOME .. '/Downloads'
 end
 
+local function finish_attachment_download(bufnr, attachment_index, attachment, downloaded, temporary_dir)
+    local destination_dir = download_directory()
+    vim.fn.mkdir(destination_dir, 'p')
+    local destination = destination_dir .. '/' .. vim.fn.fnamemodify(downloaded.path, ':t')
+    if vim.fn.rename(downloaded.path, destination) ~= 0 then
+        vim.fn.delete(temporary_dir, 'rf')
+        vim.notify('Could not move attachment to ' .. destination, vim.log.levels.ERROR)
+        return
+    end
+    vim.fn.delete(temporary_dir, 'rf')
+
+    if not vim.api.nvim_buf_is_valid(bufnr) then
+        return
+    end
+    local line = attachment_line(bufnr, attachment_index)
+    if not line then
+        return
+    end
+    vim.api.nvim_buf_set_lines(bufnr, line - 1, line, false, {
+        '  filename: ' .. (attachment.filename or '') .. ' ' .. destination,
+    })
+end
+
+local function handle_attachment_scan(bufnr, attachment_index, attachment, downloaded, temporary_dir, scan_result)
+    if scan_result.code == 0 then
+        finish_attachment_download(bufnr, attachment_index, attachment, downloaded, temporary_dir)
+        return
+    end
+
+    vim.fn.delete(temporary_dir, 'rf')
+    if scan_result.code == 1 then
+        vim.notify('ClamAV detected a virus; attachment was deleted', vim.log.levels.ERROR)
+        return
+    end
+    vim.notify('ClamAV could not scan the attachment; attachment was deleted', vim.log.levels.ERROR)
+end
+
+local function scan_attachment(bufnr, attachment_index, attachment, downloaded, temporary_dir)
+    vim.system({ 'clamscan', downloaded.path }, {}, function(scan_result)
+        vim.schedule(function()
+            handle_attachment_scan(bufnr, attachment_index, attachment, downloaded, temporary_dir, scan_result)
+        end)
+    end)
+end
+
+local function handle_attachment_download(
+    bufnr,
+    attachment_index,
+    attachment,
+    temporary_dir,
+    command,
+    download_result
+)
+    if download_result.code ~= 0 then
+        vim.fn.delete(temporary_dir, 'rf')
+        vim.notify(
+            table.concat(command, ' ') .. '\n' .. download_result.stdout .. download_result.stderr,
+            vim.log.levels.ERROR
+        )
+        return
+    end
+    if not vim.api.nvim_buf_is_valid(bufnr) then
+        return
+    end
+
+    local downloaded = vim.json.decode(download_result.stdout).attachments[1]
+    if not downloaded or not downloaded.path then
+        vim.fn.delete(temporary_dir, 'rf')
+        return
+    end
+    scan_attachment(bufnr, attachment_index, attachment, downloaded, temporary_dir)
+end
+
+local function download_attachment(bufnr, mailbox, id, attachment_index, attachment)
+    local temporary_dir = vim.fn.tempname()
+    vim.fn.mkdir(temporary_dir, 'p')
+    local command = {
+        'himalaya', 'attachment', 'download', '--mailbox', mailbox, '--json', id, attachment.id,
+        '--dir', temporary_dir,
+    }
+    vim.system(command, {}, function(download_result)
+        vim.schedule(function()
+            handle_attachment_download(
+                bufnr,
+                attachment_index,
+                attachment,
+                temporary_dir,
+                command,
+                download_result
+            )
+        end)
+    end)
+end
+
+local function attachment_at_cursor(bufnr, attachments)
+    local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
+    for index = 1, #attachments do
+        if attachment_line(bufnr, index) == cursor_line then
+            return index
+        end
+    end
+end
+
+local function select_attachment(bufnr, mailbox, id, attachments)
+    local attachment_index = attachment_at_cursor(bufnr, attachments)
+    if not attachment_index then
+        return
+    end
+    if vim.fn.executable('clamscan') == 0 then
+        vim.notify('ClamAV antivirus is not installed; attachments cannot be downloaded', vim.log.levels.ERROR)
+        return
+    end
+    download_attachment(bufnr, mailbox, id, attachment_index, attachments[attachment_index])
+end
+
 local function load_attachments(bufnr, mailbox, id)
     vim.system({ 'himalaya', 'attachment', 'list', '--mailbox', mailbox, '--json', id }, {}, function(result)
         vim.schedule(function()
@@ -112,90 +227,7 @@ local function load_attachments(bufnr, mailbox, id)
             vim.api.nvim_buf_set_lines(bufnr, line_count, line_count, false, lines)
 
             vim.keymap.set('n', '<CR>', function()
-                local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
-                local attachment_index
-                for index = 1, #attachments do
-                    if attachment_line(bufnr, index) == cursor_line then
-                        attachment_index = index
-                        break
-                    end
-                end
-                if not attachment_index then
-                    return
-                end
-                if vim.fn.executable('clamscan') == 0 then
-                    vim.notify(
-                        'ClamAV antivirus is not installed; attachments cannot be downloaded',
-                        vim.log.levels.ERROR
-                    )
-                    return
-                end
-
-                local attachment = attachments[attachment_index]
-                local temporary_dir = vim.fn.tempname()
-                vim.fn.mkdir(temporary_dir, 'p')
-                local command = {
-                    'himalaya', 'attachment', 'download', '--mailbox', mailbox, '--json', id, attachment.id,
-                    '--dir', temporary_dir,
-                }
-                vim.system(command, {}, function(download_result)
-                    vim.schedule(function()
-                        if download_result.code ~= 0 then
-                            vim.fn.delete(temporary_dir, 'rf')
-                            vim.notify(
-                                table.concat(command, ' ') .. '\n' .. download_result.stdout .. download_result.stderr,
-                                vim.log.levels.ERROR
-                            )
-                            return
-                        end
-                        if not vim.api.nvim_buf_is_valid(bufnr) then
-                            return
-                        end
-
-                        local downloaded = vim.json.decode(download_result.stdout).attachments[1]
-                        if not downloaded or not downloaded.path then
-                            vim.fn.delete(temporary_dir, 'rf')
-                            return
-                        end
-
-                        vim.system({ 'clamscan', downloaded.path }, {}, function(scan_result)
-                            vim.schedule(function()
-                                if scan_result.code ~= 0 then
-                                    vim.fn.delete(temporary_dir, 'rf')
-                                    if scan_result.code == 1 then
-                                        vim.notify('ClamAV detected a virus; attachment was deleted', vim.log.levels.ERROR)
-                                    else
-                                        vim.notify(
-                                            'ClamAV could not scan the attachment; attachment was deleted',
-                                            vim.log.levels.ERROR
-                                        )
-                                    end
-                                    return
-                                end
-
-                                local destination_dir = download_directory()
-                                vim.fn.mkdir(destination_dir, 'p')
-                                local destination = destination_dir .. '/' .. vim.fn.fnamemodify(downloaded.path, ':t')
-                                if vim.fn.rename(downloaded.path, destination) ~= 0 then
-                                    vim.fn.delete(temporary_dir, 'rf')
-                                    vim.notify('Could not move attachment to ' .. destination, vim.log.levels.ERROR)
-                                    return
-                                end
-                                vim.fn.delete(temporary_dir, 'rf')
-
-                                if not vim.api.nvim_buf_is_valid(bufnr) then
-                                    return
-                                end
-                                local line = attachment_line(bufnr, attachment_index)
-                                if line then
-                                    vim.api.nvim_buf_set_lines(bufnr, line - 1, line, false, {
-                                        '  filename: ' .. (attachment.filename or '') .. ' ' .. destination,
-                                    })
-                                end
-                            end)
-                        end)
-                    end)
-                end)
+                select_attachment(bufnr, mailbox, id, attachments)
             end, { buffer = bufnr })
         end)
     end)
@@ -444,6 +476,37 @@ function M.attach_paths(paths, new_message)
     vim.api.nvim_buf_set_lines(last_compose_bufnr, insert_at, insert_at, false, attachments)
 end
 
+local function handle_send_result(result, command, bufnr, is_new_message, response_start)
+    if result.code ~= 0 then
+        vim.notify(table.concat(command, ' ') .. '\n' .. result.stdout .. result.stderr, vim.log.levels.ERROR)
+        return
+    end
+
+    if vim.trim(result.stdout) == 'Message successfully sent' and vim.api.nvim_buf_is_valid(bufnr) then
+        if is_new_message then
+            vim.api.nvim_buf_delete(bufnr, { force = true })
+        else
+            vim.api.nvim_buf_set_lines(bufnr, response_start - 3, -1, false, {})
+        end
+    end
+    vim.notify(vim.trim(result.stdout))
+end
+
+local function add_header(headers, name, value)
+    if not name then
+        return
+    end
+
+    name = name:lower()
+    if type(headers[name]) ~= 'table' then
+        headers[name] = value
+        return
+    end
+    if value ~= '' then
+        table.insert(headers[name], value)
+    end
+end
+
 function M.send_response()
     local bufnr = vim.api.nvim_get_current_buf()
     local is_message = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_message_id")
@@ -478,16 +541,7 @@ function M.send_response()
         end
 
         local name, value = lines[index]:match('^([^:]+):%s*(.*)$')
-        if name then
-            name = name:lower()
-            if headers[name] and type(headers[name]) == 'table' then
-                if value ~= '' then
-                    table.insert(headers[name], value)
-                end
-            else
-                headers[name] = value
-            end
-        end
+        add_header(headers, name, value)
     end
 
     local command = { 'himalaya', 'message', 'compose' }
@@ -512,18 +566,7 @@ function M.send_response()
 
     vim.system(command, {}, function(result)
         vim.schedule(function()
-            if result.code == 0 then
-                if vim.trim(result.stdout) == 'Message successfully sent' and vim.api.nvim_buf_is_valid(bufnr) then
-                    if is_new_message then
-                        vim.api.nvim_buf_delete(bufnr, { force = true })
-                    else
-                        vim.api.nvim_buf_set_lines(bufnr, response_start - 3, -1, false, {})
-                    end
-                end
-                vim.notify(vim.trim(result.stdout))
-            else
-                vim.notify(table.concat(command, ' ') .. '\n' .. result.stdout .. result.stderr, vim.log.levels.ERROR)
-            end
+            handle_send_result(result, command, bufnr, is_new_message, response_start)
         end)
     end)
 end

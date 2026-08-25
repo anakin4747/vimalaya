@@ -1,3 +1,34 @@
+local function response_can_be_sent()
+    local response_markers = {
+        ['--- Reply ---'] = true,
+        ['--- Reply All ---'] = true,
+        ['--- Forward ---'] = true,
+    }
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local response_start
+    for index, line in ipairs(lines) do
+        if response_markers[line] then
+            response_start = index
+        end
+    end
+    if not response_start then
+        return false
+    end
+
+    local fields = {}
+    for index = response_start + 1, #lines do
+        if lines[index] == '' then
+            break
+        end
+
+        local name = lines[index]:match('^([^:]+):')
+        if name then
+            fields[name:lower()] = true
+        end
+    end
+    return fields.to and fields.cc and fields.subject
+end
+
 vim.api.nvim_create_user_command('Mail', function(options)
     local vimalaya = require('vimalaya')
     if options.range > 0 then
@@ -52,30 +83,7 @@ end, {
         end
         local can_send = pcall(vim.api.nvim_buf_get_var, 0, 'vimalaya_new_message')
         if not can_send then
-            local response_markers = {
-                ['--- Reply ---'] = true,
-                ['--- Reply All ---'] = true,
-                ['--- Forward ---'] = true,
-            }
-            local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-            local response_start
-            for index, line in ipairs(lines) do
-                if response_markers[line] then
-                    response_start = index
-                end
-            end
-            local fields = {}
-            for index = (response_start or #lines) + 1, #lines do
-                if lines[index] == '' then
-                    break
-                end
-
-                local name = lines[index]:match('^([^:]+):')
-                if name then
-                    fields[name:lower()] = true
-                end
-            end
-            can_send = response_start ~= nil and fields.to and fields.cc and fields.subject
+            can_send = response_can_be_sent()
         end
         if can_send then
             table.insert(subcommands, 'send')
