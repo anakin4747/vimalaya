@@ -22,13 +22,12 @@ describe(":Mail", function()
         vim.fn.mkdir(download_dir, 'p')
         vim.env.XDG_DOWNLOAD_DIR = download_dir
         executable_mocks = {
-            ['clamscan'] = function()
-                return { code = 0, stdout = '', stderr = '' }
-            end,
+            ['clamscan'] = function() return { code = 0, stdout = '', stderr = '' } end,
             ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
             ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
             ['himalaya message read --mailbox Inbox 1'] = 'tests/message.txt',
             ['himalaya message read --mailbox Inbox 2'] = 'tests/message.txt',
+            ['himalaya message compose'] = 'tests/send-suceeded.txt',
             ['himalaya attachment list --mailbox Inbox --json 1'] = 'tests/attachments-empty.json',
             ['himalaya attachment list --mailbox Inbox --json 2'] = 'tests/attachments.json',
             ['himalaya attachment download --mailbox Inbox --json 2 1'] = function(command)
@@ -46,7 +45,6 @@ describe(":Mail", function()
                     stderr = '',
                 }
             end,
-            ['himalaya message compose'] = 'tests/send-suceeded.txt',
         }
         vim.system = function(command, _, callback)
             local command_string = table.concat(command, ' ')
