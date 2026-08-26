@@ -177,10 +177,3 @@ html to markdown conversion for email bodies and set filetype to markdown or if
 there is a custom filetype for vimalaya then make that inherit from markdown
 somehow
 
----
-
-Failed clamav scans such as this:
-
-    ClamAV could not scan the attachment; attachment was deleted
-
-Should show the command stdout and stderr

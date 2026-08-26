@@ -708,6 +708,32 @@ describe(":Mail", function()
         assert.equal('  filename: invite.ics', vim.api.nvim_get_current_line())
     end)
 
+    it("reports the failed ClamAV scan command, stdout, and stderr", function()
+        local message
+        local command
+        executable_mocks['clamscan'] = function(args)
+            command = args
+            return { code = 2, stdout = 'ClamAV stdout\n', stderr = 'ClamAV stderr\n' }
+        end
+        vim.notify = function(notification)
+            message = notification
+        end
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return message ~= nil
+        end))
+        assert.equal(
+            'vimalaya command failed:\n```sh\n'
+                .. table.concat(command, ' ')
+                .. '\n```stdout\nClamAV stdout\n```\n```stderr\nClamAV stderr\n```',
+            message
+        )
+    end)
+
     it("warns when ClamAV is not installed instead of downloading attachments", function()
         local message
         vim.fn.executable = function()

@@ -166,7 +166,7 @@ local function move_attachment_to_downloads(download)
     display_downloaded_attachment_path(download, destination)
 end
 
-local function process_attachment_scan_result(download, scan_result)
+local function process_attachment_scan_result(download, command, scan_result)
     if scan_result.code == 0 then
         move_attachment_to_downloads(download)
         return
@@ -177,13 +177,14 @@ local function process_attachment_scan_result(download, scan_result)
         vim.notify('ClamAV detected a virus; attachment was deleted', vim.log.levels.ERROR)
         return
     end
-    vim.notify('ClamAV could not scan the attachment; attachment was deleted', vim.log.levels.ERROR)
+    notify_command_failure(command, scan_result)
 end
 
 local function scan_downloaded_attachment(download)
-    vim.system({ 'clamscan', download.downloaded.path }, {}, function(scan_result)
+    local command = { 'clamscan', download.downloaded.path }
+    vim.system(command, {}, function(scan_result)
         vim.schedule(function()
-            process_attachment_scan_result(download, scan_result)
+            process_attachment_scan_result(download, command, scan_result)
         end)
     end)
 end
