@@ -72,7 +72,7 @@ When to use this workflow:
    now passing.
 
 4. If the feature was provided from a TODO in TODO.md move that TODO entry to
-   .DONE.md.
+   the end of .DONE.md separated by a line of `---`.
 
 5. Stage the added change to ./tests/vimalaya_spec.lua, lua/vimalaya.lua,
    plugin/vimalaya.lua, TODO.md, and .DONE.md
