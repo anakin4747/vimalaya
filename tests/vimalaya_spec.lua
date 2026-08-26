@@ -1156,6 +1156,36 @@ describe(":Mail", function()
         }, command)
     end)
 
+    it("send omits the body flag when the composed body is empty", function()
+        local command
+        vim.cmd('Mail new')
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+            'to: recipient@example.test',
+            'cc: ',
+            'bcc: ',
+            'subject: Example subject',
+            'attach: ',
+            '',
+        })
+        executable_mocks['himalaya message compose'] = function(args)
+            command = args
+            return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
+        end
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return command ~= nil
+        end))
+        assert.same({
+            'himalaya', 'message', 'compose',
+            '--from', 'example@gmail.com',
+            '--to', 'recipient@example.test',
+            '--subject', 'Example subject',
+            '--send',
+        }, command)
+    end)
+
     it("send reports the failed himalaya command, stdout, and stderr when sending fails", function()
         local message
         local command

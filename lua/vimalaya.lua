@@ -721,9 +721,11 @@ function M.send_composed_message()
     for _, value in ipairs(headers.attach) do
         vim.list_extend(command, { '--attach', value })
     end
-    vim.list_extend(command, {
-        '--body', table.concat(vim.list_slice(lines, body_start or (#lines + 1)), '\n'), '--send',
-    })
+    local body = table.concat(vim.list_slice(lines, body_start or (#lines + 1)), '\n')
+    if body ~= '' then
+        vim.list_extend(command, { '--body', body })
+    end
+    vim.list_extend(command, { '--send' })
 
     local send = {
         command = command,
