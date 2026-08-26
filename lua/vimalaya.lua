@@ -351,13 +351,47 @@ local function open_message_at_cursor(mailbox, envelopes)
     M.open_message(mailbox, envelope.id, envelope.subject)
 end
 
+local function local_utc_offset()
+    local now = os.time()
+    return os.difftime(now, os.time(os.date('!*t', now)))
+end
+
+local function parse_offset(date)
+    if date:match('Z$') then
+        return 0
+    end
+    local sign, hours, minutes = date:match('([%+%-])(%d%d):(%d%d)$')
+    if not sign then
+        return nil
+    end
+    local seconds = tonumber(hours) * 3600 + tonumber(minutes) * 60
+    if sign == '-' then
+        return -seconds
+    end
+    return seconds
+end
+
 local function format_envelope_date(date)
-    local year, month, day, hour, minute = date:match('^(%d+)-(%d+)-(%d+)T(%d+):(%d+)')
+    local year, month, day, hour, minute, second = date:match('^(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)')
     if not year then
         return date
     end
-    return year .. '-' .. month .. '-' .. day .. ' ' .. hour .. ':' .. minute
+    local offset = parse_offset(date)
+    if not offset then
+        return year .. '-' .. month .. '-' .. day .. ' ' .. hour .. ':' .. minute
+    end
+    local epoch = os.time({
+        year = tonumber(year),
+        month = tonumber(month),
+        day = tonumber(day),
+        hour = tonumber(hour),
+        min = tonumber(minute),
+        sec = tonumber(second),
+    }) + local_utc_offset() - offset
+    return os.date('%Y-%m-%d %H:%M', epoch)
 end
+
+M._format_envelope_date = format_envelope_date
 
 local function display_envelopes(bufnr, envelopes)
     local lines = {}

@@ -479,6 +479,10 @@ describe(":Mail", function()
         }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
     end)
 
+    it("displays envelope dates in the local timezone", function()
+        assert.equal('2026-06-15 07:00', require('vimalaya')._format_envelope_date('2026-06-15T12:00:00+05:00'))
+    end)
+
     it("aligns envelope subjects at the same column", function()
         open_inbox_mailbox()
 
