@@ -733,7 +733,7 @@ function M.send_composed_message()
         is_new_message = is_new_message,
         response_start = response_start,
     }
-    vim.system(command, {}, function(result)
+    vim.system(command, { stdin = false }, function(result)
         vim.schedule(function()
             process_message_send_result(send, result)
         end)

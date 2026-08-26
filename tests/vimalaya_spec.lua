@@ -8,6 +8,7 @@ local after_each = busted.after_each
 describe(":Mail", function()
     local executable
     local executable_mocks
+    local last_system_opts
     local download_dir
     local notify
     local system
@@ -46,7 +47,8 @@ describe(":Mail", function()
                 }
             end,
         }
-        vim.system = function(command, _, callback)
+        vim.system = function(command, opts, callback)
+            last_system_opts = opts
             local command_string = table.concat(command, ' ')
             local lookup_command = vim.deepcopy(command)
             if command[1] == 'himalaya' and command[2] == 'attachment' and command[3] == 'download' then
@@ -1184,6 +1186,30 @@ describe(":Mail", function()
             '--subject', 'Example subject',
             '--send',
         }, command)
+    end)
+
+    it("send closes stdin so himalaya does not block reading the body", function()
+        local command
+        vim.cmd('Mail new')
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+            'to: recipient@example.test',
+            'cc: ',
+            'bcc: ',
+            'subject: Example subject',
+            'attach: ',
+            '',
+        })
+        executable_mocks['himalaya message compose'] = function(args)
+            command = args
+            return { code = 0, stdout = 'Message successfully sent\n', stderr = '' }
+        end
+
+        vim.cmd('Mail send')
+
+        assert.is_true(vim.wait(1000, function()
+            return command ~= nil
+        end))
+        assert.equal(false, last_system_opts.stdin)
     end)
 
     it("send reports the failed himalaya command, stdout, and stderr when sending fails", function()
