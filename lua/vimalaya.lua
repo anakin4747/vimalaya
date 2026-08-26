@@ -725,7 +725,8 @@ function M.refresh_attachment_diagnostics(bufnr)
         if path and vim.fn.filereadable(vim.fn.fnamemodify(path, ':p')) ~= 1 then
             table.insert(diagnostics, {
                 lnum = index - 1,
-                col = 0,
+                col = #line - #path,
+                end_col = #line,
                 severity = vim.diagnostic.severity.WARN,
                 message = 'attached file does not exist: ' .. path,
             })

@@ -1539,4 +1539,19 @@ describe(":Mail", function()
         assert.equal('attach: /does/not/exist.txt', vim.api.nvim_buf_get_lines(
             email, diagnostics[1].lnum, diagnostics[1].lnum + 1, false)[1])
     end)
+
+    it("underlines the filename when an attached file does not exist", function()
+        vim.cmd('Mail new')
+        local email = vim.api.nvim_get_current_buf()
+        vim.api.nvim_buf_set_lines(email, -1, -1, false, {
+            'attach: /does/not/exist.txt',
+        })
+
+        vim.api.nvim_exec_autocmds('TextChanged', { buffer = email })
+
+        local diagnostics = vim.diagnostic.get(email)
+        assert.equal(1, #diagnostics)
+        assert.equal(8, diagnostics[1].col)
+        assert.equal(27, diagnostics[1].end_col)
+    end)
 end)
