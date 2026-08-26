@@ -5,7 +5,7 @@ make:
 
 .PHONY: test
 test:
-	@nvim \
+	@time nvim \
 		--headless \
 		--noplugin \
 		-u tests/test_init.lua \
