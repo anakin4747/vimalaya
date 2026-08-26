@@ -728,7 +728,7 @@ describe(":Mail", function()
         end))
         assert.equal(
             'vimalaya command failed:\n```sh\n'
-                .. table.concat(command, ' ')
+                .. table.concat(command, ' ') .. '\n```'
                 .. '\n```stdout\nClamAV stdout\n```\n```stderr\nClamAV stderr\n```',
             message
         )
@@ -789,7 +789,7 @@ describe(":Mail", function()
         end))
         assert.equal(
             'vimalaya command failed:\n```sh\n'
-                .. table.concat(command, ' ')
+                .. table.concat(command, ' ') .. '\n```'
                 .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
             message
         )
@@ -812,7 +812,7 @@ describe(":Mail", function()
         end))
         assert.equal(
             'vimalaya command failed:\n```sh\n'
-                .. table.concat(command, ' ')
+                .. table.concat(command, ' ') .. '\n```'
                 .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
             message
         )
@@ -835,7 +835,7 @@ describe(":Mail", function()
         end))
         assert.equal(
             'vimalaya command failed:\n```sh\n'
-                .. table.concat(command, ' ')
+                .. table.concat(command, ' ') .. '\n```'
                 .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
             message
         )
@@ -862,7 +862,7 @@ describe(":Mail", function()
         end))
         assert.equal(
             'vimalaya command failed:\n```sh\n'
-                .. table.concat(command, ' ')
+                .. table.concat(command, ' ') .. '\n```'
                 .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
             message
         )
@@ -885,7 +885,7 @@ describe(":Mail", function()
         end))
         assert.equal(
             'vimalaya command failed:\n```sh\n'
-                .. table.concat(command, ' ')
+                .. table.concat(command, ' ') .. '\n```'
                 .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
             message
         )
@@ -1164,7 +1164,7 @@ describe(":Mail", function()
         end))
         assert.equal(
             'vimalaya command failed:\n```sh\n'
-                .. table.concat(command, ' ')
+                .. table.concat(command, ' ') .. '\n```'
                 .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
             message
         )
@@ -1466,7 +1466,7 @@ describe(":Mail", function()
         end))
         assert.equal(
             'vimalaya command failed:\n```sh\n'
-                .. command
+                .. command .. '\n```'
                 .. '\n```stdout\n\n```\n```stderr\ntar: command not found\n```',
             message
         )

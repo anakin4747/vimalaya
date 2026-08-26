@@ -28,7 +28,7 @@ local function notify_command_failure(command, result)
     vim.notify(
         'vimalaya command failed:\n```sh\n'
             .. command
-            .. '\n```stdout\n'
+            .. '\n```\n```stdout\n'
             .. vim.trim(result.stdout or '')
             .. '\n```\n```stderr\n'
             .. vim.trim(result.stderr or '')
