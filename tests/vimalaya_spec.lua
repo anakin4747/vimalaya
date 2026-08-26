@@ -795,6 +795,102 @@ describe(":Mail", function()
         )
     end)
 
+    it("reports the failed mailbox list command, stdout, and stderr", function()
+        local message
+        local command
+        executable_mocks['himalaya mailbox list --json'] = function(args)
+            command = args
+            return { code = 1, stdout = 'Himalaya stdout\n', stderr = 'Himalaya stderr\n' }
+        end
+        vim.notify = function(notification)
+            message = notification
+        end
+        vim.cmd('Mail')
+
+        assert.is_true(vim.wait(1000, function()
+            return message ~= nil
+        end))
+        assert.equal(
+            'vimalaya command failed:\n```sh\n'
+                .. table.concat(command, ' ')
+                .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
+            message
+        )
+    end)
+
+    it("reports the failed envelope list command, stdout, and stderr", function()
+        local message
+        local command
+        executable_mocks['himalaya envelope list --mailbox Inbox --json --page-size 100'] = function(args)
+            command = args
+            return { code = 1, stdout = 'Himalaya stdout\n', stderr = 'Himalaya stderr\n' }
+        end
+        vim.notify = function(notification)
+            message = notification
+        end
+        open_inbox_mailbox()
+
+        assert.is_true(vim.wait(1000, function()
+            return message ~= nil
+        end))
+        assert.equal(
+            'vimalaya command failed:\n```sh\n'
+                .. table.concat(command, ' ')
+                .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
+            message
+        )
+    end)
+
+    it("reports the failed message read command, stdout, and stderr", function()
+        local message
+        local command
+        executable_mocks['himalaya message read --mailbox Inbox 1'] = function(args)
+            command = args
+            return { code = 1, stdout = 'Himalaya stdout\n', stderr = 'Himalaya stderr\n' }
+        end
+        vim.notify = function(notification)
+            message = notification
+        end
+        open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+        end))
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return message ~= nil
+        end))
+        assert.equal(
+            'vimalaya command failed:\n```sh\n'
+                .. table.concat(command, ' ')
+                .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
+            message
+        )
+    end)
+
+    it("reports the failed attachment list command, stdout, and stderr", function()
+        local message
+        local command
+        executable_mocks['himalaya attachment list --mailbox Inbox --json 2'] = function(args)
+            command = args
+            return { code = 1, stdout = 'Himalaya stdout\n', stderr = 'Himalaya stderr\n' }
+        end
+        vim.notify = function(notification)
+            message = notification
+        end
+        require('vimalaya').open_message('Inbox', '2', 'Message with attachments')
+
+        assert.is_true(vim.wait(1000, function()
+            return message ~= nil
+        end))
+        assert.equal(
+            'vimalaya command failed:\n```sh\n'
+                .. table.concat(command, ' ')
+                .. '\n```stdout\nHimalaya stdout\n```\n```stderr\nHimalaya stderr\n```',
+            message
+        )
+    end)
+
     it("restores an email after deleting its buffer", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()

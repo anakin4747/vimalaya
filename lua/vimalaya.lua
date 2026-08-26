@@ -268,8 +268,12 @@ local function enable_attachment_downloads(message, attachments)
     end, { buffer = message.bufnr })
 end
 
-local function process_attachment_list_result(message, result)
-    if result.code ~= 0 or not vim.api.nvim_buf_is_valid(message.bufnr) then
+local function process_attachment_list_result(message, command, result)
+    if result.code ~= 0 then
+        notify_command_failure(command, result)
+        return
+    end
+    if not vim.api.nvim_buf_is_valid(message.bufnr) then
         return
     end
 
@@ -285,13 +289,17 @@ local function request_attachment_list(message)
     local command = { 'himalaya', 'attachment', 'list', '--mailbox', message.mailbox, '--json', message.id }
     vim.system(command, {}, function(result)
         vim.schedule(function()
-            process_attachment_list_result(message, result)
+            process_attachment_list_result(message, command, result)
         end)
     end)
 end
 
-local function display_message(message, result)
-    if result.code ~= 0 or not vim.api.nvim_buf_is_valid(message.bufnr) then
+local function display_message(message, command, result)
+    if result.code ~= 0 then
+        notify_command_failure(command, result)
+        return false
+    end
+    if not vim.api.nvim_buf_is_valid(message.bufnr) then
         return false
     end
 
@@ -304,8 +312,8 @@ local function display_message(message, result)
     return true
 end
 
-local function process_message_read_result(message, result)
-    if not display_message(message, result) then
+local function process_message_read_result(message, command, result)
+    if not display_message(message, command, result) then
         return
     end
     request_attachment_list(message)
@@ -329,9 +337,10 @@ function M.open_message(mailbox, id, subject)
     vim.api.nvim_set_current_buf(bufnr)
 
     local message = { bufnr = bufnr, mailbox = mailbox, id = tostring(id) }
-    vim.system({ 'himalaya', 'message', 'read', '--mailbox', mailbox, id }, {}, function(result)
+    local command = { 'himalaya', 'message', 'read', '--mailbox', mailbox, id }
+    vim.system(command, {}, function(result)
         vim.schedule(function()
-            process_message_read_result(message, result)
+            process_message_read_result(message, command, result)
         end)
     end)
 end
@@ -356,8 +365,12 @@ local function enable_message_opening(bufnr, mailbox, envelopes)
     end, { buffer = bufnr })
 end
 
-local function process_envelope_list_result(bufnr, mailbox, result)
-    if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+local function process_envelope_list_result(bufnr, mailbox, command, result)
+    if result.code ~= 0 then
+        notify_command_failure(command, result)
+        return
+    end
+    if not vim.api.nvim_buf_is_valid(bufnr) then
         return
     end
 
@@ -367,9 +380,10 @@ local function process_envelope_list_result(bufnr, mailbox, result)
 end
 
 local function request_envelope_list(bufnr, mailbox)
-    vim.system({ 'himalaya', 'envelope', 'list', '--mailbox', mailbox, '--json', '--page-size', '100' }, {}, function(result)
+    local command = { 'himalaya', 'envelope', 'list', '--mailbox', mailbox, '--json', '--page-size', '100' }
+    vim.system(command, {}, function(result)
         vim.schedule(function()
-            process_envelope_list_result(bufnr, mailbox, result)
+            process_envelope_list_result(bufnr, mailbox, command, result)
         end)
     end)
 end
@@ -392,8 +406,12 @@ function M.open_mailbox_buffer(mailbox)
     request_envelope_list(bufnr, mailbox)
 end
 
-local function display_mailbox_list(bufnr, result)
-    if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+local function display_mailbox_list(bufnr, command, result)
+    if result.code ~= 0 then
+        notify_command_failure(command, result)
+        return
+    end
+    if not vim.api.nvim_buf_is_valid(bufnr) then
         return
     end
 
@@ -407,9 +425,10 @@ local function display_mailbox_list(bufnr, result)
 end
 
 local function request_mailbox_list(bufnr)
-    vim.system({ 'himalaya', 'mailbox', 'list', '--json' }, {}, function(result)
+    local command = { 'himalaya', 'mailbox', 'list', '--json' }
+    vim.system(command, {}, function(result)
         vim.schedule(function()
-            display_mailbox_list(bufnr, result)
+            display_mailbox_list(bufnr, command, result)
         end)
     end)
 end
