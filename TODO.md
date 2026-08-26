@@ -82,6 +82,8 @@ mispelled or not a valid email address
 ---
 
 b4 integration and git send mail support
+korgalore support
+maildir support
 
 ---
 
