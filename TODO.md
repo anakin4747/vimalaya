@@ -111,6 +111,10 @@ Handle unlocking himalaya to not freeze vimalaya
  - For replyall, pass explicit repeated --to/--cc gathered from buffer fields (your parser already supports repeated fields
    in lua/vimalaya.lua:307).
 
+---
+
+Maybe this is already resolved?
+
 ```
 Error: SMTP RCPT TO failed: rejected 555 5.5.2 Syntax error, cannot decode response. For more information, go to
 
@@ -139,13 +143,13 @@ E492: Not an editor command: Mess
 <!---->
 <!-- Once the archive is created vimalaya should have a way to refresh the -->
 <!-- diagnostics of the buffer -->
-
----
-
-any compression format should be supported. If the command to compress fails
-due to the command not existing that needs to be shown to the user in the same
-fashion as all the other warnings. It should show the entire command that
-failed.
+<!---->
+<!-- --- -->
+<!---->
+<!-- any compression format should be supported. If the command to compress fails -->
+<!-- due to the command not existing that needs to be shown to the user in the same -->
+<!-- fashion as all the other warnings. It should show the entire command that -->
+<!-- failed. -->
 
 ---
 
@@ -156,9 +160,97 @@ buffer???
 
 At main menu allow selecting the accounts first
 
+This needs to correctly propagate the email to use in the from:
+
 ---
 
 html to markdown conversion for email bodies and set filetype to markdown or if
 there is a custom filetype for vimalaya then make that inherit from markdown
 somehow
 
+pandoc for this.
+
+---
+
+Before an initial release of this make sure to have a SECURITY.md that uses
+security guides from https://github.com/ossf/wg-best-practices-os-developers.git
+
+---
+
+:Mail by default converts html email contents to markdown
+:Mail markdown enables the conversion of html email contents to markdown
+:Mail html disables the conversion of html email contents to markdown
+
+---
+
+Pressing K over any character in 'From' in the following text:
+
+    From: Example Person <person@example.com>
+
+Should provide the following hover documentation:
+
+    The "From:" field specifies the author(s) of the message, that is, the mailbox(es) of the person(s) or system(s) responsible for the writing of the message.
+
+This shall use 'keywordprg' pointing to a user command like :VimalayaKeywordprg
+(not starting with :Mail since this isn't intended to be globally available but
+its the only way to have the 'keywordprg' defined by the plugin) so that no
+keymap is required and the default K behaviour can rely on 'keywordprg'
+
+Since this doesn't actually implement the floating hover window this
+:VimalayaKeywordprg should call vim.lsp.util.open_floating_preview() to get the
+same hover like result
+
+---
+
+Upon pressing enter on the filename line:
+
+    attachments:
+      filename: vimalaya.tar.gz
+        mime: application/gzip
+        size: 1432415
+
+The UI should be immediately updated to this:
+
+    attachments:
+      filename: vimalaya.tar.gz downloading
+        mime: application/gzip
+        size: 1432415
+
+Once it is downloaded it should be updated to this:
+
+    attachments:
+      filename: vimalaya.tar.gz scanning for viruses
+        mime: application/gzip
+        size: 1432415
+
+Once scanning for viruses is finished it should look like this:
+
+    attachments:
+      filename: vimalaya.tar.gz /home/kin/Downloads/vimalaya.tar.gz
+        mime: application/gzip
+        size: 1432415
+
+If scan failed to run successfully we should see:
+
+    attachments:
+      filename: vimalaya.tar.gz scanning for viruses failed
+        mime: application/gzip
+        size: 1432415
+
+If the scan found viruses we should see:
+
+    attachments:
+      filename: vimalaya.tar.gz VIRUS DETECTED - FILE DELETED
+        mime: application/gzip
+        size: 1432415
+
+---
+
+If the file was downloaded and still exists at the downloaded path do not let
+the user download again by emitting a notification that it is already
+downloaded or at least that file already exists. And do not download it.
+
+---
+
+Need debouncing on scanning attachments and emit notification if an attachment
+is currently being scanned but the user hit enter to try and scan again.
