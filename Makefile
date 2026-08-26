@@ -13,3 +13,8 @@ test:
 		| grep -v '/tmp/nvim' \
 		| grep -v 'Message successfully sent'
 	@cog check
+
+.PHONY: install
+install:
+	rm -rf $(HOME)/.local/share/nvim/site/pack/core/opt/vimalaya
+	cp -r $(HOME)/src/vimalaya $(HOME)/.local/share/nvim/site/pack/core/opt/
