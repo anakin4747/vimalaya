@@ -240,7 +240,7 @@ describe(":Mail", function()
     local function open_first_message()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
         assert.is_true(vim.wait(1000, function()
@@ -470,19 +470,31 @@ describe(":Mail", function()
         open_inbox_mailbox()
 
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
         assert.same({
-            '2026-01-01T00:00:00Z First example message',
-            '2026-01-02T00:00:00Z Second example message',
-            '2026-01-03T00:00:00Z Third example message',
+            '2026-01-01 00:00 First example message',
+            '2026-01-02 00:00 Second example message',
+            '2026-01-03 00:00 Third example message',
         }, vim.api.nvim_buf_get_lines(0, 0, -1, false))
+    end)
+
+    it("aligns envelope subjects at the same column", function()
+        open_inbox_mailbox()
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
+        end))
+        local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        local first = lines[1]:find('First')
+        assert.equal(first, lines[2]:find('Second'))
+        assert.equal(first, lines[3]:find('Third'))
     end)
 
     it("refresh refreshes mailbox buffers", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
         vim.bo.readonly = false
         vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'stale' })
@@ -491,7 +503,7 @@ describe(":Mail", function()
         vim.cmd('Mail refresh')
 
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
     end)
 
@@ -504,7 +516,7 @@ describe(":Mail", function()
     it("reuses an active mailbox buffer from the main menu", function()
         local main_menu = open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
         local expected = vim.api.nvim_get_current_buf()
         local count = #vim.api.nvim_list_bufs()
@@ -519,7 +531,7 @@ describe(":Mail", function()
     it("reuses a hidden mailbox buffer from the main menu", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
         local expected = vim.api.nvim_get_current_buf()
 
@@ -539,7 +551,7 @@ describe(":Mail", function()
     it("opens a message buffer from an envelope", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
         local mailbox = vim.api.nvim_get_current_buf()
 
@@ -557,7 +569,7 @@ describe(":Mail", function()
     it("backs message buffers with temporary files", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
 
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
@@ -572,7 +584,7 @@ describe(":Mail", function()
     it("names email buffers after their subject", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
 
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
@@ -586,7 +598,7 @@ describe(":Mail", function()
     it("makes email buffers writable", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
 
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
@@ -853,7 +865,7 @@ describe(":Mail", function()
         end
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
 
@@ -894,7 +906,7 @@ describe(":Mail", function()
     it("restores an email after deleting its buffer", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
         local mailbox = vim.api.nvim_get_current_buf()
 
@@ -916,7 +928,7 @@ describe(":Mail", function()
     it("reuses an open email buffer", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
         local mailbox = vim.api.nvim_get_current_buf()
 
@@ -957,7 +969,7 @@ describe(":Mail", function()
         local unrelated = vim.api.nvim_create_buf(true, false)
         local main_menu = open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01T00:00:00Z First example message'
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == '2026-01-01 00:00 First example message'
         end))
         local mailbox = vim.api.nvim_get_current_buf()
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)

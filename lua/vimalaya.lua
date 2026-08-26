@@ -351,10 +351,26 @@ local function open_message_at_cursor(mailbox, envelopes)
     M.open_message(mailbox, envelope.id, envelope.subject)
 end
 
+local function format_envelope_date(date)
+    local year, month, day, hour, minute = date:match('^(%d+)-(%d+)-(%d+)T(%d+):(%d+)')
+    if not year then
+        return date
+    end
+    return year .. '-' .. month .. '-' .. day .. ' ' .. hour .. ':' .. minute
+end
+
 local function display_envelopes(bufnr, envelopes)
     local lines = {}
+    local dates = {}
+    local width = 0
     for _, envelope in ipairs(envelopes) do
-        table.insert(lines, envelope.date .. ' ' .. envelope.subject)
+        local date = format_envelope_date(envelope.date)
+        table.insert(dates, date)
+        width = math.max(width, #date)
+    end
+    for index, envelope in ipairs(envelopes) do
+        local date = dates[index] .. string.rep(' ', width - #dates[index])
+        table.insert(lines, date .. ' ' .. envelope.subject)
     end
     replace_readonly_buffer_lines(bufnr, lines)
 end
