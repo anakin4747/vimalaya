@@ -164,7 +164,7 @@ local function find_attachment_filename_line(bufnr, attachment_index)
     end
 end
 
-local function display_downloaded_attachment_path(download, destination)
+local function display_attachment_status(download, status)
     if not vim.api.nvim_buf_is_valid(download.bufnr) then
         return
     end
@@ -172,8 +172,9 @@ local function display_downloaded_attachment_path(download, destination)
     if not line then
         return
     end
+    local filename = '  filename: ' .. (download.attachment.filename or '')
     vim.api.nvim_buf_set_lines(download.bufnr, line - 1, line, false, {
-        '  filename: ' .. (download.attachment.filename or '') .. ' ' .. destination,
+        status == '' and filename or filename .. ' ' .. status,
     })
 end
 
@@ -185,7 +186,7 @@ local function move_attachment_to_cwd(download)
         return
     end
     vim.fn.delete(download.temporary_dir, 'rf')
-    display_downloaded_attachment_path(download, destination)
+    display_attachment_status(download, destination)
 end
 
 local function process_attachment_scan_result(download, command, scan_result)
@@ -196,13 +197,16 @@ local function process_attachment_scan_result(download, command, scan_result)
 
     vim.fn.delete(download.temporary_dir, 'rf')
     if scan_result.code == 1 then
+        display_attachment_status(download, 'VIRUS DETECTED - FILE DELETED')
         vim.notify('ClamAV detected a virus; attachment was deleted', vim.log.levels.ERROR)
         return
     end
+    display_attachment_status(download, 'scanning for viruses failed')
     notify_command_failure(command, scan_result)
 end
 
 local function scan_downloaded_attachment(download)
+    display_attachment_status(download, 'scanning for viruses')
     local command = { 'clamscan', download.downloaded.path }
     vim.system(command, {}, function(scan_result)
         vim.schedule(function()
@@ -214,6 +218,7 @@ end
 local function process_attachment_download_result(download, result)
     if result.code ~= 0 then
         vim.fn.delete(download.temporary_dir, 'rf')
+        display_attachment_status(download, '')
         notify_command_failure(download.command, result)
         return
     end
@@ -224,12 +229,14 @@ local function process_attachment_download_result(download, result)
     download.downloaded = vim.json.decode(result.stdout).attachments[1]
     if not download.downloaded or not download.downloaded.path then
         vim.fn.delete(download.temporary_dir, 'rf')
+        display_attachment_status(download, '')
         return
     end
     scan_downloaded_attachment(download)
 end
 
 local function start_attachment_download(download)
+    display_attachment_status(download, 'downloading')
     vim.system(download.command, {}, function(result)
         vim.schedule(function()
             process_attachment_download_result(download, result)

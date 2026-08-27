@@ -179,50 +179,6 @@ security guides from https://github.com/ossf/wg-best-practices-os-developers.git
 
 ---
 
-Upon pressing enter on the filename line:
-
-    attachments:
-      filename: vimalaya.tar.gz
-        mime: application/gzip
-        size: 1432415
-
-The UI should be immediately updated to this:
-
-    attachments:
-      filename: vimalaya.tar.gz downloading
-        mime: application/gzip
-        size: 1432415
-
-Once it is downloaded it should be updated to this:
-
-    attachments:
-      filename: vimalaya.tar.gz scanning for viruses
-        mime: application/gzip
-        size: 1432415
-
-Once scanning for viruses is finished it should look like this:
-
-    attachments:
-      filename: vimalaya.tar.gz /home/kin/Downloads/vimalaya.tar.gz
-        mime: application/gzip
-        size: 1432415
-
-If scan failed to run successfully we should see:
-
-    attachments:
-      filename: vimalaya.tar.gz scanning for viruses failed
-        mime: application/gzip
-        size: 1432415
-
-If the scan found viruses we should see:
-
-    attachments:
-      filename: vimalaya.tar.gz VIRUS DETECTED - FILE DELETED
-        mime: application/gzip
-        size: 1432415
-
----
-
 If the file was downloaded and still exists at the downloaded path do not let
 the user download again by emitting a notification that it is already
 downloaded or at least that file already exists. And do not download it.

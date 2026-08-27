@@ -726,7 +726,50 @@ describe(":Mail", function()
             return scanned
         end))
 
-        assert.equal('  filename: invite.ics', vim.api.nvim_get_current_line())
+        assert.equal('  filename: invite.ics VIRUS DETECTED - FILE DELETED', vim.api.nvim_get_current_line())
+    end)
+
+    it("displays downloading while an attachment downloads", function()
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+        vim.system = function() end
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.equal('  filename: invite.ics downloading', vim.api.nvim_get_current_line())
+    end)
+
+    it("displays scanning for viruses while an attachment is scanned", function()
+        local download = vim.system
+        vim.system = function(command, opts, callback)
+            if command[1] == 'clamscan' then
+                return
+            end
+            return download(command, opts, callback)
+        end
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_get_current_line() == '  filename: invite.ics scanning for viruses'
+        end))
+    end)
+
+    it("displays scanning for viruses failed when the ClamAV scan fails", function()
+        executable_mocks['clamscan'] = function()
+            return { code = 2, stdout = '', stderr = 'ClamAV stderr\n' }
+        end
+        vim.notify = function() end
+        open_message_with_attachments()
+        vim.api.nvim_win_set_cursor(0, { 11, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_get_current_line() == '  filename: invite.ics scanning for viruses failed'
+        end))
     end)
 
     it("reports the failed ClamAV scan command, stdout, and stderr", function()
