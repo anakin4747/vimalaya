@@ -231,3 +231,8 @@ downloaded or at least that file already exists. And do not download it.
 
 Need debouncing on scanning attachments and emit notification if an attachment
 is currently being scanned but the user hit enter to try and scan again.
+
+---
+
+KK should put the cursor in the hover box the same way it does for language
+servers
