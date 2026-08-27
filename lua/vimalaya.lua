@@ -1,7 +1,32 @@
 local M = {}
 
+local rfc5322 = [[ RFC 5322 Internet Message Format.]]
+local dest_fields_docs = [[The destination fields specify the recipients of the message.  Each destination field may have one or more addresses, and the addresses indicate the intended recipients of the message.  The only difference between the three fields is how each is used. ]]
+local in_reply_to_and_references = [[The "In-Reply-To:" and "References:" fields are used when creating a reply to a message.  They hold the message identifier of the original message and the message identifiers of other messages (for example, in the case of a reply to a message that was itself a reply).  The "In-Reply-To:" field may be used to identify the message (or messages) to which the new message is a reply, while the "References:" field may be used to identify a "thread" of conversation.
+
+When creating a reply to a message, the "In-Reply-To:" and "References:" fields of the resultant message are constructed as follows:
+
+The "In-Reply-To:" field will contain the contents of the "Message-ID:" field of the message to which this one is a reply (the "parent message").  If there is more than one parent message, then the "In-Reply-To:" field will contain the contents of all of the parents' "Message-ID:" fields.  If there is no "Message-ID:" field in any of the parent messages, then the new message will have no "In- Reply-To:" field.
+
+The "References:" field will contain the contents of the parent's "References:" field (if any) followed by the contents of the parent's "Message-ID:" field (if any).  If the parent message does not contain a "References:" field but does have an "In-Reply-To:" field containing a single message identifier, then the "References:" field will contain the contents of the parent's "In-Reply-To:" field followed by the contents of the parent's "Message-ID:" field (if any).  If the parent has none of the "References:", "In-Reply-To:", or "Message-ID:" fields, then the new message will have no "References:" field.
+]] .. rfc5322
+
+local informational_fields = [[The informational fields are all optional.  The "Subject:" and "Comments:" fields are unstructured fields as defined in section 2.2.1, and therefore may contain text or folding white space.  The "Keywords:" field contains a comma-separated list of one or more
+
+These three fields are intended to have only human-readable content with information about the message.  The "Subject:" field is the most common and contains a short string identifying the topic of the message.  When used in a reply, the field body MAY start with the string "Re: " (an abbreviation of the Latin "in re", meaning "in the matter of") followed by the contents of the "Subject:" field body of the original message.  If this is done, only one instance of the literal string "Re: " ought to be used since use of other strings or more than one instance can lead to undesirable consequences.  The "Comments:" field contains any additional comments on the text of the body of the message.  The "Keywords:" field contains a comma- separated list of important words and phrases that might be useful for the recipient.
+]] .. rfc5322
+
 M.header_docs = {
-    from = [[The "From:" field specifies the author(s) of the message, that is, the mailbox(es) of the person(s) or system(s) responsible for the writing of the message.]]
+    from = [[The "From:" field specifies the author(s) of the message, that is, the mailbox(es) of the person(s) or system(s) responsible for the writing of the message.]] .. rfc5322,
+    to = dest_fields_docs .. [[The "To:" field contains the address(es) of the primary recipient(s) of the message.]] .. rfc5322,
+    cc = dest_fields_docs .. [[The "Cc:" field (where the "Cc" means "Carbon Copy" in the sense of making a copy on a typewriter using carbon paper) contains the addresses of others who are to receive the message, though the content of the message may not be directed at them.]] .. rfc5322,
+    bcc = dest_fields_docs .. [[The "Bcc:" field (where the "Bcc" means "Blind Carbon Copy") contains addresses of recipients of the message whose addresses are not to be revealed to other recipients of the message.  There are three ways in which the "Bcc:" field is used.  In the first case, when a message containing a "Bcc:" field is prepared to be sent, the "Bcc:" line is removed even though all of the recipients (including those specified in the "Bcc:" field) are sent a copy of the message.  In the second case, recipients specified in the "To:" and "Cc:" lines each are sent a copy of the message with the "Bcc:" line removed as above, but the recipients on the "Bcc:" line get a separate copy of the message containing a "Bcc:" line.  (When there are multiple recipient addresses in the "Bcc:" field, some implementations actually send a separate copy of the message to each recipient with a "Bcc:" containing only the address of that particular recipient.)  Finally, since a "Bcc:" field may contain no addresses, a "Bcc:" field can be sent without any addresses indicating to the recipients that blind copies were sent to someone.  Which method to use with "Bcc:" fields is implementation dependent, but refer to the "Security Considerations" section of this document for a discussion of each.]] .. rfc5322,
+    message_id = [[The "Message-ID:" field provides a unique message identifier that refers to a particular version of a particular message.  The uniqueness of the message identifier is guaranteed by the host that generates it (see below).  This message identifier is intended to be machine readable and not necessarily meaningful to humans.  A message identifier pertains to exactly one version of a particular message; subsequent revisions to the message each receive new message identifiers.]] .. rfc5322,
+    in_reply_to = in_reply_to_and_references,
+    references = in_reply_to_and_references,
+    subject = informational_fields,
+    comments = informational_fields,
+    keywords = informational_fields,
 }
 
 local function keywordprg()
