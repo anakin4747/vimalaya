@@ -1,5 +1,9 @@
 local M = {}
 
+M.header_docs = {
+    from = [[The "From:" field specifies the author(s) of the message, that is, the mailbox(es) of the person(s) or system(s) responsible for the writing of the message.]]
+}
+
 local main_menu_name = "vimalaya main menu"
 local attachment_diagnostics_namespace = vim.api.nvim_create_namespace('vimalaya_attachments')
 vim.diagnostic.config({

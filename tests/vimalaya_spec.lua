@@ -1,9 +1,11 @@
 local busted = require("plenary.busted")
+local spy = require("luassert.spy")
 local describe = busted.describe
 local it = busted.it
 local before_each = busted.before_each
 local after_each = busted.after_each
 
+local header_docs = require('vimalaya').header_docs
 
 describe(":Mail", function()
     local executable
@@ -1625,5 +1627,35 @@ describe(":Mail", function()
         assert.equal(1, #diagnostics)
         assert.equal(8, diagnostics[1].col)
         assert.equal(27, diagnostics[1].end_col)
+    end)
+
+    it("defines :VimalayaKeywordprg in vimalaya buffers", function()
+        open_first_message()
+
+        assert.is_true(vim.tbl_contains(vim.fn.getcompletion('VimalayaKeywordprg', 'command'), 'VimalayaKeywordprg'))
+    end)
+
+    it("does not define :VimalayaKeywordprg outside vimalaya buffers", function()
+        vim.cmd('enew')
+
+        assert.is_false(vim.tbl_contains(vim.fn.getcompletion('VimalayaKeywordprg', 'command'), 'VimalayaKeywordprg'))
+    end)
+
+    it("sets keywordprg to :VimalayaKeywordprg in vimalaya buffers", function()
+        open_first_message()
+
+        assert.equal(':VimalayaKeywordprg', vim.bo.keywordprg)
+    end)
+
+    it("hovers documentation for From when pressing K", function()
+        local open_floating_preview = spy.on(vim.lsp.util, 'open_floating_preview')
+        open_first_message()
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('K'), 'x', false)
+
+        assert.spy(open_floating_preview).was_called()
+        assert.same({ header_docs.from }, open_floating_preview.calls[1].vals[1])
+        open_floating_preview:revert()
     end)
 end)
