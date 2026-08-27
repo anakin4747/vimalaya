@@ -36,7 +36,7 @@ local function keywordprg()
         return
     end
 
-    local docs = M.header_docs[name:lower()]
+    local docs = M.header_docs[name:lower():gsub('%-', '_')]
     if not docs then
         return
     end

@@ -1658,4 +1658,117 @@ describe(":Mail", function()
         assert.same({ header_docs.from }, open_floating_preview.calls[1].vals[1])
         open_floating_preview:revert()
     end)
+
+    it("hovers documentation for To when pressing K", function()
+        local open_floating_preview = spy.on(vim.lsp.util, 'open_floating_preview')
+        open_first_message()
+        vim.api.nvim_win_set_cursor(0, { 2, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('K'), 'x', false)
+
+        assert.spy(open_floating_preview).was_called()
+        assert.same({ header_docs.to }, open_floating_preview.calls[1].vals[1])
+        open_floating_preview:revert()
+    end)
+
+    it("hovers documentation for Cc when pressing K", function()
+        local open_floating_preview = spy.on(vim.lsp.util, 'open_floating_preview')
+        open_first_message()
+        vim.api.nvim_win_set_cursor(0, { 3, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('K'), 'x', false)
+
+        assert.spy(open_floating_preview).was_called()
+        assert.same({ header_docs.cc }, open_floating_preview.calls[1].vals[1])
+        open_floating_preview:revert()
+    end)
+
+    it("hovers documentation for Bcc when pressing K", function()
+        local open_floating_preview = spy.on(vim.lsp.util, 'open_floating_preview')
+        open_first_message()
+        vim.api.nvim_buf_set_lines(0, 3, 3, false, { 'Bcc: Example Blind <blind@example.test>' })
+        vim.api.nvim_win_set_cursor(0, { 4, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('K'), 'x', false)
+
+        assert.spy(open_floating_preview).was_called()
+        assert.same({ header_docs.bcc }, open_floating_preview.calls[1].vals[1])
+        open_floating_preview:revert()
+    end)
+
+    it("hovers documentation for Subject when pressing K", function()
+        local open_floating_preview = spy.on(vim.lsp.util, 'open_floating_preview')
+        open_first_message()
+        vim.api.nvim_win_set_cursor(0, { 4, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('K'), 'x', false)
+
+        assert.spy(open_floating_preview).was_called()
+        assert.same({ header_docs.subject }, open_floating_preview.calls[1].vals[1])
+        open_floating_preview:revert()
+    end)
+
+    it("hovers documentation for Message-ID when pressing K", function()
+        local open_floating_preview = spy.on(vim.lsp.util, 'open_floating_preview')
+        open_first_message()
+        vim.api.nvim_win_set_cursor(0, { 6, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('K'), 'x', false)
+
+        assert.spy(open_floating_preview).was_called()
+        assert.same({ header_docs.message_id }, open_floating_preview.calls[1].vals[1])
+        open_floating_preview:revert()
+    end)
+
+    it("hovers documentation for In-Reply-To when pressing K", function()
+        local open_floating_preview = spy.on(vim.lsp.util, 'open_floating_preview')
+        open_first_message()
+        vim.api.nvim_buf_set_lines(0, 6, 6, false, { 'In-Reply-To: <example-0@example.test>' })
+        vim.api.nvim_win_set_cursor(0, { 7, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('K'), 'x', false)
+
+        assert.spy(open_floating_preview).was_called()
+        assert.same({ header_docs.in_reply_to }, open_floating_preview.calls[1].vals[1])
+        open_floating_preview:revert()
+    end)
+
+    it("hovers documentation for References when pressing K", function()
+        local open_floating_preview = spy.on(vim.lsp.util, 'open_floating_preview')
+        open_first_message()
+        vim.api.nvim_buf_set_lines(0, 6, 6, false, { 'References: <example-0@example.test>' })
+        vim.api.nvim_win_set_cursor(0, { 7, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('K'), 'x', false)
+
+        assert.spy(open_floating_preview).was_called()
+        assert.same({ header_docs.references }, open_floating_preview.calls[1].vals[1])
+        open_floating_preview:revert()
+    end)
+
+    it("hovers documentation for Comments when pressing K", function()
+        local open_floating_preview = spy.on(vim.lsp.util, 'open_floating_preview')
+        open_first_message()
+        vim.api.nvim_buf_set_lines(0, 6, 6, false, { 'Comments: An example comment' })
+        vim.api.nvim_win_set_cursor(0, { 7, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('K'), 'x', false)
+
+        assert.spy(open_floating_preview).was_called()
+        assert.same({ header_docs.comments }, open_floating_preview.calls[1].vals[1])
+        open_floating_preview:revert()
+    end)
+
+    it("hovers documentation for Keywords when pressing K", function()
+        local open_floating_preview = spy.on(vim.lsp.util, 'open_floating_preview')
+        open_first_message()
+        vim.api.nvim_buf_set_lines(0, 6, 6, false, { 'Keywords: example, message' })
+        vim.api.nvim_win_set_cursor(0, { 7, 0 })
+
+        vim.api.nvim_feedkeys(vim.keycode('K'), 'x', false)
+
+        assert.spy(open_floating_preview).was_called()
+        assert.same({ header_docs.keywords }, open_floating_preview.calls[1].vals[1])
+        open_floating_preview:revert()
+    end)
 end)
