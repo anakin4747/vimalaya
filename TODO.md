@@ -72,10 +72,6 @@ buffers and going from mailbox buffers to email buffers
 
 ---
 
-K hover headers in email buffers show the specification for that header
-
----
-
 Red syntax highlighting for emails not found in cache meaning it may be
 mispelled or not a valid email address
 
@@ -180,25 +176,6 @@ security guides from https://github.com/ossf/wg-best-practices-os-developers.git
 :Mail by default converts html email contents to markdown
 :Mail markdown enables the conversion of html email contents to markdown
 :Mail html disables the conversion of html email contents to markdown
-
----
-
-Pressing K over any character in 'From' in the following text:
-
-    From: Example Person <person@example.com>
-
-Should provide the following hover documentation:
-
-    The "From:" field specifies the author(s) of the message, that is, the mailbox(es) of the person(s) or system(s) responsible for the writing of the message.
-
-This shall use 'keywordprg' pointing to a user command like :VimalayaKeywordprg
-(not starting with :Mail since this isn't intended to be globally available but
-its the only way to have the 'keywordprg' defined by the plugin) so that no
-keymap is required and the default K behaviour can rely on 'keywordprg'
-
-Since this doesn't actually implement the floating hover window this
-:VimalayaKeywordprg should call vim.lsp.util.open_floating_preview() to get the
-same hover like result
 
 ---
 

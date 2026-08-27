@@ -4,6 +4,21 @@ M.header_docs = {
     from = [[The "From:" field specifies the author(s) of the message, that is, the mailbox(es) of the person(s) or system(s) responsible for the writing of the message.]]
 }
 
+local function keywordprg()
+    local line = vim.api.nvim_get_current_line()
+    local name = line:match('^([%a%-]+):')
+    if not name then
+        return
+    end
+
+    local docs = M.header_docs[name:lower()]
+    if not docs then
+        return
+    end
+
+    vim.lsp.util.open_floating_preview({ docs }, '', {})
+end
+
 local main_menu_name = "vimalaya main menu"
 local attachment_diagnostics_namespace = vim.api.nvim_create_namespace('vimalaya_attachments')
 vim.diagnostic.config({
@@ -338,6 +353,8 @@ function M.open_message(mailbox, id, subject)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya", true)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_message_mailbox", mailbox)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_message_id", tostring(id))
+    vim.api.nvim_buf_create_user_command(bufnr, 'VimalayaKeywordprg', keywordprg, { nargs = '*' })
+    vim.bo[bufnr].keywordprg = ':VimalayaKeywordprg'
     vim.api.nvim_set_current_buf(bufnr)
 
     local message = { bufnr = bufnr, mailbox = mailbox, id = tostring(id) }
