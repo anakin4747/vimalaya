@@ -164,26 +164,6 @@ local function find_attachment_filename_line(bufnr, attachment_index)
     end
 end
 
-local function resolve_download_directory()
-    if vim.env.XDG_DOWNLOAD_DIR then
-        return vim.fn.expand(vim.env.XDG_DOWNLOAD_DIR)
-    end
-
-    local config_home = vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. '/.config')
-    local ok, lines = pcall(vim.fn.readfile, config_home .. '/user-dirs.dirs')
-    if not ok then
-        return vim.env.HOME .. '/Downloads'
-    end
-    for _, line in ipairs(lines) do
-        local directory = line:match('^XDG_DOWNLOAD_DIR="(.*)"$')
-        if directory then
-            return directory:gsub('%$HOME', vim.env.HOME)
-        end
-    end
-
-    return vim.env.HOME .. '/Downloads'
-end
-
 local function display_downloaded_attachment_path(download, destination)
     if not vim.api.nvim_buf_is_valid(download.bufnr) then
         return
@@ -197,10 +177,8 @@ local function display_downloaded_attachment_path(download, destination)
     })
 end
 
-local function move_attachment_to_downloads(download)
-    local destination_dir = resolve_download_directory()
-    vim.fn.mkdir(destination_dir, 'p')
-    local destination = destination_dir .. '/' .. vim.fn.fnamemodify(download.downloaded.path, ':t')
+local function move_attachment_to_cwd(download)
+    local destination = vim.fn.getcwd() .. '/' .. vim.fn.fnamemodify(download.downloaded.path, ':t')
     if vim.fn.rename(download.downloaded.path, destination) ~= 0 then
         vim.fn.delete(download.temporary_dir, 'rf')
         vim.notify('Could not move attachment to ' .. destination, vim.log.levels.ERROR)
@@ -212,7 +190,7 @@ end
 
 local function process_attachment_scan_result(download, command, scan_result)
     if scan_result.code == 0 then
-        move_attachment_to_downloads(download)
+        move_attachment_to_cwd(download)
         return
     end
 

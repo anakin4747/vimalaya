@@ -14,16 +14,13 @@ describe(":Mail", function()
     local download_dir
     local notify
     local system
-    local xdg_download_dir
 
     before_each(function()
         executable = vim.fn.executable
         notify = vim.notify
         system = vim.system
-        xdg_download_dir = vim.env.XDG_DOWNLOAD_DIR
         download_dir = vim.fn.tempname()
         vim.fn.mkdir(download_dir, 'p')
-        vim.env.XDG_DOWNLOAD_DIR = download_dir
         executable_mocks = {
             ['clamscan'] = function() return { code = 0, stdout = '', stderr = '' } end,
             ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
@@ -95,8 +92,8 @@ describe(":Mail", function()
         vim.fn.executable = executable
         vim.notify = notify
         vim.system = system
-        vim.env.XDG_DOWNLOAD_DIR = xdg_download_dir
         vim.fn.delete(download_dir, 'rf')
+        vim.fn.delete(vim.fn.getcwd() .. '/invite.ics')
     end)
 
     it("does not error", function()
@@ -645,7 +642,8 @@ describe(":Mail", function()
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
 
         assert.is_true(vim.wait(1000, function()
-            return vim.api.nvim_get_current_line() == '  filename: invite.ics ' .. download_dir .. '/invite.ics'
+            return vim.api.nvim_get_current_line()
+                == '  filename: invite.ics ' .. vim.fn.getcwd() .. '/invite.ics'
         end))
     end)
 
@@ -672,9 +670,12 @@ describe(":Mail", function()
         vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
 
         assert.is_true(vim.wait(1000, function()
-            return vim.fn.filereadable(download_dir .. '/invite.ics') == 1
+            return vim.fn.filereadable(vim.fn.getcwd() .. '/invite.ics') == 1
         end))
-        assert.same(vim.fn.readfile('tests/invite.ics', 'b'), vim.fn.readfile(download_dir .. '/invite.ics', 'b'))
+        assert.same(
+            vim.fn.readfile('tests/invite.ics', 'b'),
+            vim.fn.readfile(vim.fn.getcwd() .. '/invite.ics', 'b')
+        )
     end)
 
     it("scans downloaded attachments with ClamAV", function()
