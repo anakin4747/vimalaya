@@ -192,3 +192,22 @@ is currently being scanned but the user hit enter to try and scan again.
 
 KK should put the cursor in the hover box the same way it does for language
 servers
+
+---
+
+:Mail search - start to think about how you would want to search your email,
+the closer to grep the better
+
+---
+
+Displaying the From: email in the mailbox buffer
+
+---
+
+Map grr to list all emails in references with quickfix list of telescope if
+telescope is available.
+
+---
+
+Pressing enter on a In-Reply-To: message id or references: message Id should
+take you to that email
