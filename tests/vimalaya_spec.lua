@@ -374,6 +374,8 @@ describe(":Mail", function()
         mock_envelopes(preview_command, 200)
         mock_envelopes(full_command, 203)
         executable_mocks['himalaya message read --mailbox Inbox 203'] = 'tests/message.txt'
+        executable_mocks['himalaya attachment list --mailbox Inbox --json 203'] =
+            'tests/attachments-empty.json'
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
             return vim.api.nvim_buf_line_count(0) == 203
