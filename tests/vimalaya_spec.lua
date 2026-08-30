@@ -286,6 +286,23 @@ describe(":Mail", function()
         end
     end
 
+    local function mock_envelope_list(envelopes)
+        local result = { code = 0, stdout = vim.json.encode({ envelopes = envelopes }), stderr = '' }
+        executable_mocks[preview_command] = function()
+            return result
+        end
+        executable_mocks[full_command] = function()
+            return result
+        end
+    end
+
+    local function listed_envelope_lines()
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] ~= ''
+        end))
+        return vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    end
+
     it("requests a preview of two hundred envelopes", function()
         local command
         executable_mocks[preview_command] = function(args)
@@ -614,6 +631,28 @@ describe(":Mail", function()
         local first = lines[1]:find('First')
         assert.equal(first, lines[2]:find('Second'))
         assert.equal(first, lines[3]:find('Third'))
+    end)
+
+    it("lists envelopes without a date", function()
+        mock_envelope_list({
+            { id = '1', subject = 'Dated message', date = '2026-01-01T00:00:00Z' },
+            { id = '2', subject = 'Undated message', date = vim.NIL },
+        })
+        open_inbox_mailbox()
+
+        assert.same({
+            '2026-01-01 00:00 Dated message',
+            '                 Undated message',
+        }, listed_envelope_lines())
+    end)
+
+    it("lists envelopes without a date when no envelope has a date", function()
+        mock_envelope_list({
+            { id = '1', subject = 'Undated message', date = vim.NIL },
+        })
+        open_inbox_mailbox()
+
+        assert.same({ 'Undated message' }, listed_envelope_lines())
     end)
 
     it("refresh refreshes mailbox buffers", function()

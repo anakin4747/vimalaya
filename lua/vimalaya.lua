@@ -403,6 +403,9 @@ local function parse_offset(date)
 end
 
 local function format_envelope_date(date)
+    if type(date) ~= 'string' then
+        return ''
+    end
     local year, month, day, hour, minute, second = date:match('^(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)')
     if not year then
         return date
@@ -433,9 +436,10 @@ local function display_envelopes(bufnr, envelopes)
         table.insert(dates, date)
         width = math.max(width, #date)
     end
+    local separator = width > 0 and ' ' or ''
     for index, envelope in ipairs(envelopes) do
         local date = dates[index] .. string.rep(' ', width - #dates[index])
-        table.insert(lines, date .. ' ' .. envelope.subject)
+        table.insert(lines, date .. separator .. envelope.subject)
     end
     replace_readonly_buffer_lines(bufnr, lines)
 end
