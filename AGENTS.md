@@ -151,3 +151,47 @@ Rules for code reviewing:
 - If a test conflicts with a requested change, stop and ask the user to confirm
   the intended behavior before modifying the test.
 
+## Reading `make` Output
+
+Always run `make` on its own and read every line it prints. Never pipe it into
+another program, never redirect it to a file or /dev/null, and never filter it
+with `grep`, `head`, or `tail`.
+
+This is not a style preference. The summary counters and the exit code do not
+report everything that went wrong, so filtering the output hides real failures.
+
+An assertion that fails inside a `vim.schedule`, `vim.system`, or `vim.defer_fn`
+callback runs on the event loop rather than on the test's stack. Plenary only
+wraps the `it()` body in `xpcall`, so it never sees the error. Neovim catches it
+instead and prints it, and the run still finishes with `FAILED 0`, `ERRORS 0`,
+and exit status 0. Because nearly every himalaya call in this plugin is
+asynchronous, most of the test suite fails this way.
+
+The following output was produced by a suite that reported 133 successes, zero
+failures, zero errors, and exited 0:
+
+```
+SUCCESS :Mail keeps every envelope when the preview arrives last
+ERROR   /home/kin/src/vimalaya/tests/vimalaya_spec.lua:68
+    unexpected command: himalaya attachment list --mailbox Inbox --json 203
+    Expected objects to not be the same.
+    Passed in:
+    (nil)
+    Did not expect:
+    type nil
+
+Error in command line:
+SUCCESS :Mail opens the message of an envelope outside the preview
+```
+
+A test was opening a message without mocking the `attachment list` command that
+`process_message_read_result` always issues afterwards, so the suite was running
+a himalaya command no test had authorized. The test was still reported as
+`SUCCESS`. Running `make | grep FAILED` would have shown a clean run.
+
+So when `make` finishes, check three things and not just the last one:
+
+- no `ERROR` blocks anywhere in the output
+- no `Error in command line:` anywhere in the output
+- `FAILED` and `ERRORS` are both `0`
+
