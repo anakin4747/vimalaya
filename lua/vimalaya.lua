@@ -503,10 +503,12 @@ local function request_envelope_page(bufnr, listing, mailbox, page_size, complet
     end)
 end
 
-local function request_envelope_list(bufnr, mailbox)
+local function request_envelope_list(bufnr, mailbox, preview)
     local listing = { envelopes = {}, complete = false }
     enable_message_opening(bufnr, mailbox, listing)
-    request_envelope_page(bufnr, listing, mailbox, ENVELOPE_PREVIEW_SIZE, false)
+    if preview then
+        request_envelope_page(bufnr, listing, mailbox, ENVELOPE_PREVIEW_SIZE, false)
+    end
     request_envelope_page(bufnr, listing, mailbox, 0, true)
 end
 
@@ -525,7 +527,7 @@ function M.open_mailbox_buffer(mailbox)
     vim.api.nvim_buf_set_var(bufnr, "vimalaya_mailbox", mailbox)
     vim.bo[bufnr].readonly = true
     vim.api.nvim_set_current_buf(bufnr)
-    request_envelope_list(bufnr, mailbox)
+    request_envelope_list(bufnr, mailbox, true)
 end
 
 local function display_mailbox_list(bufnr, command, result)
@@ -595,7 +597,7 @@ function M.refresh_current_mail_view()
 
     local has_mailbox, mailbox = pcall(vim.api.nvim_buf_get_var, 0, "vimalaya_mailbox")
     if has_mailbox then
-        request_envelope_list(vim.api.nvim_get_current_buf(), mailbox)
+        request_envelope_list(vim.api.nvim_get_current_buf(), mailbox, false)
     end
 end
 

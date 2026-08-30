@@ -689,6 +689,54 @@ describe(":Mail", function()
         end))
     end)
 
+    it("refresh requests every envelope", function()
+        local command
+        local requests = 0
+        mock_envelopes(preview_command, 3)
+        executable_mocks[full_command] = function(args)
+            command = args
+            requests = requests + 1
+            return envelope_result(3)
+        end
+        open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return requests == 1
+        end))
+
+        vim.cmd('Mail refresh')
+
+        assert.is_true(vim.wait(1000, function()
+            return requests == 2
+        end))
+        assert.same({
+            'himalaya', 'envelope', 'list', '--mailbox', 'Inbox', '--json', '--page-size', '0',
+        }, command)
+    end)
+
+    it("refresh does not request an envelope preview", function()
+        local previews = 0
+        local requests = 0
+        executable_mocks[preview_command] = function()
+            previews = previews + 1
+            return envelope_result(3)
+        end
+        executable_mocks[full_command] = function()
+            requests = requests + 1
+            return envelope_result(3)
+        end
+        open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return requests == 1
+        end))
+
+        vim.cmd('Mail refresh')
+
+        assert.is_true(vim.wait(1000, function()
+            return requests == 2
+        end))
+        assert.equal(1, previews)
+    end)
+
     it("offers refresh completion in mailbox buffers", function()
         open_inbox_mailbox()
 
