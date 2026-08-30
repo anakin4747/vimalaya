@@ -1,23 +1,4 @@
 
----
-
-As you scroll down a `vimalaya <mailbox> mailbox` buffer, the plugin will
-asynchronously fetch more until reaching the end of the envolopes.
-
----
-
-Upon reaching the bottom of the envolopes the last line should say:
-```
-END OF ENVOLOPES
-```
-
----
-
-`G` should bring you to the bottom of the envolopes, not just the bottom of the
-currently loaded envolopes.
-
----
-
 How will the user know that async waiting is happening? Rotate the colors of
 the cursor while pending
 
@@ -106,46 +87,6 @@ Handle unlocking himalaya to not freeze vimalaya
  - For forward: build himalaya message forward <id> --mailbox <mailbox> ... --save <drafts_mailbox>.
  - For replyall, pass explicit repeated --to/--cc gathered from buffer fields (your parser already supports repeated fields
    in lua/vimalaya.lua:307).
-
----
-
-Maybe this is already resolved?
-
-```
-Error: SMTP RCPT TO failed: rejected 555 5.5.2 Syntax error, cannot decode response. For more information, go to
-
-Suggestions:
- - Run with --log-level to enable more verbose logs
-
-E492: Not an editor command: Mess
-```
-
----
-
-<!-- start with a new email or reply with the following: -->
-<!---->
-<!--     attach: /path/to/directory -->
-<!---->
-<!-- Then append: -->
-<!---->
-<!--     attach: /path/to/directory.tar.gz -->
-<!---->
-<!-- Then write the buffer with `:w` -->
-<!---->
-<!-- Now vimalaya should make the compressed archive. It should update the -->
-<!-- diagnostics to be an info diagnostic (so that makes two diagnostics including the -->
-<!-- error diagnostics since the file doesn't exist) that vimalaya is compressing -->
-<!-- the file. -->
-<!---->
-<!-- Once the archive is created vimalaya should have a way to refresh the -->
-<!-- diagnostics of the buffer -->
-<!---->
-<!-- --- -->
-<!---->
-<!-- any compression format should be supported. If the command to compress fails -->
-<!-- due to the command not existing that needs to be shown to the user in the same -->
-<!-- fashion as all the other warnings. It should show the entire command that -->
-<!-- failed. -->
 
 ---
 
