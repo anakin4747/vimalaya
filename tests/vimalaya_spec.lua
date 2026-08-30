@@ -24,7 +24,8 @@ describe(":Mail", function()
         executable_mocks = {
             ['clamscan'] = function() return { code = 0, stdout = '', stderr = '' } end,
             ['himalaya mailbox list --json'] = 'tests/mailboxes.json',
-            ['himalaya envelope list --mailbox Inbox --json --page-size 100'] = 'tests/envelopes.json',
+            ['himalaya envelope list --mailbox Inbox --json --page-size 200'] = 'tests/envelopes.json',
+            ['himalaya envelope list --mailbox Inbox --json --page-size 0'] = 'tests/envelopes.json',
             ['himalaya message read --mailbox Inbox 1'] = 'tests/message.txt',
             ['himalaya message read --mailbox Inbox 2'] = 'tests/message.txt',
             ['himalaya message compose'] = 'tests/send-suceeded.txt',
@@ -77,6 +78,15 @@ describe(":Mail", function()
                 }
             end
 
+            if result == nil then
+                return
+            end
+            if result.delay then
+                vim.defer_fn(function()
+                    callback(result)
+                end, result.delay)
+                return
+            end
             vim.schedule(function()
                 callback(result)
             end)
@@ -249,6 +259,116 @@ describe(":Mail", function()
         end))
         vim.api.nvim_buf_set_lines(0, 2, 2, false, { 'Cc: Example Copy <copy@example.test>' })
     end
+
+    local preview_command = 'himalaya envelope list --mailbox Inbox --json --page-size 200'
+    local full_command = 'himalaya envelope list --mailbox Inbox --json --page-size 0'
+
+    local function envelope_result(count, delay)
+        local envelopes = {}
+        for id = 1, count do
+            table.insert(envelopes, {
+                id = tostring(id),
+                subject = 'Message ' .. id,
+                date = '2026-01-01T00:00:00Z',
+            })
+        end
+        return {
+            code = 0,
+            stdout = vim.json.encode({ envelopes = envelopes }),
+            stderr = '',
+            delay = delay,
+        }
+    end
+
+    local function mock_envelopes(command, count, delay)
+        executable_mocks[command] = function()
+            return envelope_result(count, delay)
+        end
+    end
+
+    it("requests a preview of two hundred envelopes", function()
+        local command
+        executable_mocks[preview_command] = function(args)
+            command = args
+            return envelope_result(3)
+        end
+        mock_envelopes(full_command, 3)
+        open_inbox_mailbox()
+
+        assert.is_true(vim.wait(1000, function()
+            return command ~= nil
+        end))
+        assert.same({
+            'himalaya', 'envelope', 'list', '--mailbox', 'Inbox', '--json', '--page-size', '200',
+        }, command)
+    end)
+
+    it("requests every envelope", function()
+        local command
+        mock_envelopes(preview_command, 3)
+        executable_mocks[full_command] = function(args)
+            command = args
+            return envelope_result(3)
+        end
+        open_inbox_mailbox()
+
+        assert.is_true(vim.wait(1000, function()
+            return command ~= nil
+        end))
+        assert.same({
+            'himalaya', 'envelope', 'list', '--mailbox', 'Inbox', '--json', '--page-size', '0',
+        }, command)
+    end)
+
+    it("lists the preview while every envelope is still loading", function()
+        mock_envelopes(preview_command, 200)
+        executable_mocks[full_command] = function() end
+        open_inbox_mailbox()
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_line_count(0) == 200
+        end))
+    end)
+
+    it("replaces the preview with every envelope", function()
+        mock_envelopes(preview_command, 200)
+        mock_envelopes(full_command, 203)
+        open_inbox_mailbox()
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_line_count(0) == 203
+        end))
+        assert.equal('2026-01-01 00:00 Message 203', vim.api.nvim_buf_get_lines(0, 202, 203, false)[1])
+    end)
+
+    it("keeps every envelope when the preview arrives last", function()
+        mock_envelopes(preview_command, 200, 50)
+        mock_envelopes(full_command, 203)
+        open_inbox_mailbox()
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_line_count(0) == 203
+        end))
+        vim.wait(100)
+        assert.equal(203, vim.api.nvim_buf_line_count(0))
+    end)
+
+    it("opens the message of an envelope outside the preview", function()
+        mock_envelopes(preview_command, 200)
+        mock_envelopes(full_command, 203)
+        executable_mocks['himalaya message read --mailbox Inbox 203'] = 'tests/message.txt'
+        open_inbox_mailbox()
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_line_count(0) == 203
+        end))
+        vim.api.nvim_win_set_cursor(0, { 203, 0 })
+        vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'x', false)
+
+        assert.is_true(vim.wait(1000, function()
+            return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
+                == 'From: Example Sender <sender@example.test>'
+        end))
+    end)
 
     it("completes subcommands", function()
         open_first_message()
@@ -885,7 +1005,7 @@ describe(":Mail", function()
     it("reports the failed envelope list command, stdout, and stderr", function()
         local message
         local command
-        executable_mocks['himalaya envelope list --mailbox Inbox --json --page-size 100'] = function(args)
+        executable_mocks['himalaya envelope list --mailbox Inbox --json --page-size 200'] = function(args)
             command = args
             return { code = 1, stdout = 'Himalaya stdout\n', stderr = 'Himalaya stderr\n' }
         end

@@ -440,33 +440,61 @@ local function display_envelopes(bufnr, envelopes)
     replace_readonly_buffer_lines(bufnr, lines)
 end
 
-local function enable_message_opening(bufnr, mailbox, envelopes)
+local function enable_message_opening(bufnr, mailbox, listing)
     vim.keymap.set('n', '<CR>', function()
-        open_message_at_cursor(mailbox, envelopes)
+        open_message_at_cursor(mailbox, listing.envelopes)
     end, { buffer = bufnr })
 end
 
-local function process_envelope_list_result(bufnr, mailbox, command, result)
+local ENVELOPE_PREVIEW_SIZE = 200
+
+local function envelope_list_command(mailbox, page_size)
+    return {
+        'himalaya', 'envelope', 'list',
+        '--mailbox', mailbox,
+        '--json',
+        '--page-size', tostring(page_size),
+    }
+end
+
+local function process_envelope_list_result(bufnr, listing, command, result)
     if result.code ~= 0 then
         notify_command_failure(command, result)
-        return
+        return false
     end
     if not vim.api.nvim_buf_is_valid(bufnr) then
-        return
+        return false
     end
 
-    local envelopes = vim.json.decode(result.stdout)
-    display_envelopes(bufnr, envelopes.envelopes)
-    enable_message_opening(bufnr, mailbox, envelopes.envelopes)
+    listing.envelopes = vim.json.decode(result.stdout).envelopes
+    display_envelopes(bufnr, listing.envelopes)
+    return true
+end
+
+local function apply_envelope_list_result(bufnr, listing, command, result, complete)
+    if listing.complete then
+        return
+    end
+    if not process_envelope_list_result(bufnr, listing, command, result) then
+        return
+    end
+    listing.complete = complete
+end
+
+local function request_envelope_page(bufnr, listing, mailbox, page_size, complete)
+    local command = envelope_list_command(mailbox, page_size)
+    vim.system(command, {}, function(result)
+        vim.schedule(function()
+            apply_envelope_list_result(bufnr, listing, command, result, complete)
+        end)
+    end)
 end
 
 local function request_envelope_list(bufnr, mailbox)
-    local command = { 'himalaya', 'envelope', 'list', '--mailbox', mailbox, '--json', '--page-size', '100' }
-    vim.system(command, {}, function(result)
-        vim.schedule(function()
-            process_envelope_list_result(bufnr, mailbox, command, result)
-        end)
-    end)
+    local listing = { envelopes = {}, complete = false }
+    enable_message_opening(bufnr, mailbox, listing)
+    request_envelope_page(bufnr, listing, mailbox, ENVELOPE_PREVIEW_SIZE, false)
+    request_envelope_page(bufnr, listing, mailbox, 0, true)
 end
 
 function M.open_mailbox_buffer(mailbox)
