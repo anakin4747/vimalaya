@@ -152,3 +152,20 @@ telescope is available.
 
 Pressing enter on a In-Reply-To: message id or references: message Id should
 take you to that email
+
+---
+
+Only intend this plugin for use with maildir backend of himalaya so that
+ripgrep can be used for searching for Message-IDs and email addresses
+
+Throw early warning if himalaya is not compiled with maildir support
+
+---
+
+Warn if ripgrep is not installed, the same format as all the other missing
+executable warnings.
+
+----
+
+Highlighting an email and typing :Mail should add all emails highlighted as to:
+entries
