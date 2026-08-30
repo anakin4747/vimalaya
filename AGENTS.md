@@ -165,7 +165,7 @@ callback runs on the event loop rather than on the test's stack. Plenary only
 wraps the `it()` body in `xpcall`, so it never sees the error. Neovim catches it
 instead and prints it, and the run still finishes with `FAILED 0`, `ERRORS 0`,
 and exit status 0. Because nearly every himalaya call in this plugin is
-asynchronous, most of the test suite fails this way.
+asynchronous, almost every test here is exposed to that failure mode.
 
 The following output was produced by a suite that reported 133 successes, zero
 failures, zero errors, and exited 0:
