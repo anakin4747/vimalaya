@@ -427,6 +427,15 @@ end
 
 M._format_envelope_date = format_envelope_date
 
+local function format_envelope_subject(subject)
+    if type(subject) ~= 'string' then
+        return ''
+    end
+    return (subject:gsub('%s*[\r\n]+%s*', ' '):gsub('%s+$', ''))
+end
+
+M._format_envelope_subject = format_envelope_subject
+
 local function display_envelopes(bufnr, envelopes)
     local lines = {}
     local dates = {}
@@ -439,7 +448,7 @@ local function display_envelopes(bufnr, envelopes)
     local separator = width > 0 and ' ' or ''
     for index, envelope in ipairs(envelopes) do
         local date = dates[index] .. string.rep(' ', width - #dates[index])
-        table.insert(lines, date .. separator .. envelope.subject)
+        table.insert(lines, date .. separator .. format_envelope_subject(envelope.subject))
     end
     replace_readonly_buffer_lines(bufnr, lines)
 end

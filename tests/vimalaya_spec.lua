@@ -655,6 +655,24 @@ describe(":Mail", function()
         assert.same({ 'Undated message' }, listed_envelope_lines())
     end)
 
+    it("lists envelopes whose subject spans multiple lines", function()
+        mock_envelope_list({
+            { id = '1', subject = 'Multi\nline subject', date = '2026-01-01T00:00:00Z' },
+        })
+        open_inbox_mailbox()
+
+        assert.same({ '2026-01-01 00:00 Multi line subject' }, listed_envelope_lines())
+    end)
+
+    it("lists envelopes whose subject ends with a newline", function()
+        mock_envelope_list({
+            { id = '1', subject = 'Trailing newline subject\n\n', date = '2026-01-01T00:00:00Z' },
+        })
+        open_inbox_mailbox()
+
+        assert.same({ '2026-01-01 00:00 Trailing newline subject' }, listed_envelope_lines())
+    end)
+
     it("refresh refreshes mailbox buffers", function()
         open_inbox_mailbox()
         assert.is_true(vim.wait(1000, function()
